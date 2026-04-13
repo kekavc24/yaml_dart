@@ -23,9 +23,7 @@ print(TagShorthand.named('example', 'named')); // !example!named
 ```dart
 // Global tags allow uri or tag shorthand prefixes
 
-/// %TAG !! !no-yaml-uri
-///
-/// Has 3 parts
+/// %TAG !! !no-yaml-uri:
 ///   - %TAG - is implied in the type `GlobalTag`
 ///   - !! - Secondary tag handle
 ///   - !no-yaml-uri - tag shorthand with primary tag handle
@@ -63,18 +61,6 @@ print(
 Verbatim tags are, well, verbatim. You are to provide the tag in its fully resolved verbatim form unless its a tag shorthand.
 
 ```dart
-/// Declaring !!int in verbatim:
-///
-/// 1. Has secondary tag handle. Use the "tag:yaml.org,2002" prefix
-/// 2. Kind is "int".
-/// 3. Use ":" or "/" as separator
-/// 4. However, since this is a uri. We need to escape the "," in the prefix
-///   as %2C
-///
-/// Final uri: "tag:yaml.org%2C2002:int". The object automatically wraps it for
-/// you to match yaml requirements.
-///
-/// In verbatim: !<!tag:yaml.org,2002:int>
 print(VerbatimTag.fromTagUri('tag:yaml.org,2002:int'));
 
 /// Tag shorthand: "!my-custom-tag"
