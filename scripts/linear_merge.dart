@@ -140,6 +140,7 @@ void _maybeRegenerateTestSuite(String rootDir) {
     mapper: (s) => s.trim().isNotEmpty,
   )) {
     runCommand('git', args: ['add', 'README.md'], directory: rootDir);
+    runCommand('git', args: ['status'], directory: rootDir);
     runCommand(
       'git',
       args: ['commit', '-m', 'Test Suite Update: $passRate%'],
