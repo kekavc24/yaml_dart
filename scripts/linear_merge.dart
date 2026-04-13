@@ -139,7 +139,7 @@ void _maybeRegenerateTestSuite(String rootDir) {
     directory: rootDir,
     mapper: (s) => s.trim().isNotEmpty,
   )) {
-    runCommand('git', args: ['add', 'README.md'], directory: rootDir);
+    runCommand('git', args: ['add', 'README.md'], directory: rookieYamlDir);
     runCommand('git', args: ['status'], directory: rootDir);
     runCommand(
       'git',
