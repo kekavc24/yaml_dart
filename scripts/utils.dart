@@ -27,7 +27,7 @@ T runCommand<T>(
   );
 
   if (!exitCode.isSuccess) {
-    throw Exception(messageOnFail ?? stderr);
+    throw Exception('Exit: $exitCode\n${messageOnFail ?? stderr}');
   }
 
   final mOrN = mapper ?? (s) => s.trim() as T;
