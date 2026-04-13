@@ -300,9 +300,11 @@ bool exitBlockCollection<Obj, T extends NodeDelegate<Obj>>(
 
   void updateEnd(RuneOffset end) => collection.nodeSpan.parsingEnd = end;
 
-  if (iterator.isEOF || exitIndent == null) {
+  final parsedEnd = iterator.isEOF || exitIndent == null;
+
+  if (parsedEnd) {
     updateEnd(lineInfo.current);
-    return iterator.isEOF;
+    return parsedEnd;
   } else if (marker.stopIfParsingDoc) {
     updateEnd(lineInfo.start);
     return true;
