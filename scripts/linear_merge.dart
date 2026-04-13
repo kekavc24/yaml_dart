@@ -143,7 +143,7 @@ void _maybeRegenerateTestSuite(String rootDir) {
     runCommand('git', args: ['status'], directory: rootDir);
     runCommand(
       'git',
-      args: ['commit', '-m', 'Test Suite Update: $passRate\\%'],
+      args: ['commit', '-m', 'Test Suite Update: $passRate'],
       directory: rootDir,
     );
   }
