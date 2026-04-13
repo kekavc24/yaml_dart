@@ -20,6 +20,8 @@ jobs:
     if: ${{ github.repository_owner == 'kekavc24' && contains(github.event.pull_request.labels.*.name, 'lgtm_bot_merge_lfg') && github.event.pull_request.merged == false }}
     outputs:
       validated_commit: ${{ steps.capture.outputs.head }}
+    permissions:
+      contents: write
 
     steps:
       # Capture commit before checking if PR is approved

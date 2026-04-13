@@ -222,6 +222,7 @@ void main(List<String> args) {
   scopedProcRunner('git', args: ['remote', 'show', 'origin']);
 
   scopedProcRunner('git', args: ['checkout', _defaultBranch]); // Just be safe
+  scopedProcRunner('git', args: ['fetch']);
 
   // Most people may find this offputting.
   scopedProcRunner('git', args: ['merge', '--ff-only', actualMergeBranch]);
