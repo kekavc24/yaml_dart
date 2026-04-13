@@ -139,11 +139,11 @@ void _maybeRegenerateTestSuite(String rootDir) {
     directory: rootDir,
     mapper: (s) => s.trim().isNotEmpty,
   )) {
-    runCommand('git', args: ['add', 'README.md'], directory: rootDir);
+    runCommand('git', args: ['add', 'README.md'], directory: rookieYamlDir);
     runCommand('git', args: ['status'], directory: rootDir);
     runCommand(
       'git',
-      args: ['commit', '-m', 'Test Suite Update: $passRate%'],
+      args: ['commit', '-m', 'Test Suite Update: $passRate'],
       directory: rootDir,
     );
   }
@@ -222,6 +222,8 @@ void main(List<String> args) {
   scopedProcRunner('git', args: ['remote', 'show', 'origin']);
 
   scopedProcRunner('git', args: ['checkout', _defaultBranch]); // Just be safe
+  scopedProcRunner('git', args: ['pull']);
+  scopedProcRunner('git', args: ['branch', '-vv']);
 
   // Most people may find this offputting.
   scopedProcRunner('git', args: ['merge', '--ff-only', actualMergeBranch]);

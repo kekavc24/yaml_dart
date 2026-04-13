@@ -16,10 +16,12 @@ concurrency:
 
 jobs:
   merge_preflight:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: ${{ github.repository_owner == 'kekavc24' && contains(github.event.pull_request.labels.*.name, 'lgtm_bot_merge_lfg') && github.event.pull_request.merged == false }}
     outputs:
       validated_commit: ${{ steps.capture.outputs.head }}
+    permissions:
+      contents: write
 
     steps:
       # Capture commit before checking if PR is approved
@@ -44,7 +46,7 @@ jobs:
 
   linear_merge:
     needs: merge_preflight
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: 🐎 Hello Git
