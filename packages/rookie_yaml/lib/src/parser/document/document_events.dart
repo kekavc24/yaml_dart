@@ -96,6 +96,20 @@ enum FlowCollectionEvent implements ParserEvent {
   bool get isFlowContext => true;
 }
 
+ScalarEvent _expectNsCharAfter(SourceIterator iterator, int? charAfter) {
+  if (charAfter.isNotNullAnd((e) => e.isNonSpaceChar())) {
+    return ScalarEvent.startFlowPlain;
+  }
+
+  throwWithSingleOffset(
+    iterator,
+    message:
+        '"${iterator.current.asString()}" must be followed by a non-space '
+        'character when used as the first char of plain scalar.',
+    offset: iterator.currentLineInfo.current,
+  );
+}
+
 /// Infers a generalized [ParserEvent] that determines how the [DocumentParser]
 /// should parse the next collection of characters.
 ParserEvent inferNextEvent(
@@ -112,52 +126,97 @@ ParserEvent inferNextEvent(
     (c) => c.isWhiteSpace() || c.isLineBreak(),
   );
 
-  return switch (iterator.current) {
-    doubleQuote => ScalarEvent.startFlowDoubleQuoted,
-    singleQuote => ScalarEvent.startFlowSingleQuoted,
-    literal => ScalarEvent.startBlockLiteral,
-    folded => ScalarEvent.startBlockFolded,
+  switch (iterator.current) {
+    case doubleQuote:
+      return ScalarEvent.startFlowDoubleQuoted;
 
-    mappingValue when isBlockContext && canBeSeparation =>
-      BlockCollectionEvent.startEntryValue,
+    case singleQuote:
+      return ScalarEvent.startFlowSingleQuoted;
 
-    // Flow node doesn't need the space when key is json-like (double quoted)
-    mappingValue
-        when !isBlockContext &&
-            (canBeSeparation ||
-                lastKeyWasJsonLike ||
-                charAfter.isNotNullAnd((c) => c.isFlowDelimiter())) =>
-      FlowCollectionEvent.startEntryValue,
+    // |
+    case literal:
+      return ScalarEvent.startBlockLiteral;
 
-    blockSequenceEntry when canBeSeparation =>
-      BlockCollectionEvent.startBlockListEntry,
+    // >
+    case folded:
+      return ScalarEvent.startBlockFolded;
 
-    mappingKey when isBlockContext && canBeSeparation =>
-      BlockCollectionEvent.startExplicitKey,
+    case flowSequenceStart:
+      return FlowCollectionEvent.startFlowSequence;
+    case flowSequenceEnd:
+      return FlowCollectionEvent.endFlowSequence;
+    case flowEntryEnd:
+      return FlowCollectionEvent.nextFlowEntry;
+    case mappingStart:
+      return FlowCollectionEvent.startFlowMap;
+    case mappingEnd:
+      return FlowCollectionEvent.endFlowMap;
 
-    // In flow collections, it is allow a "?" to occur separately without any
-    // key beside a "," or "{" or "}" or "[" or "]"
-    mappingKey
-        when !isBlockContext &&
-            (canBeSeparation ||
-                charAfter.isNotNullAnd((c) => c.isFlowDelimiter())) =>
-      FlowCollectionEvent.startExplicitKey,
-
-    flowSequenceStart => FlowCollectionEvent.startFlowSequence,
-    flowSequenceEnd => FlowCollectionEvent.endFlowSequence,
-    flowEntryEnd => FlowCollectionEvent.nextFlowEntry,
-    mappingStart => FlowCollectionEvent.startFlowMap,
-    mappingEnd => FlowCollectionEvent.endFlowMap,
-
-    anchor => NodePropertyEvent.startAnchor,
-    alias => NodePropertyEvent.startAlias,
-    tag =>
-      charAfter == verbatimStart
+    case anchor:
+      return NodePropertyEvent.startAnchor;
+    case alias:
+      return NodePropertyEvent.startAlias;
+    case tag:
+      return charAfter == verbatimStart
           ? NodePropertyEvent.startVerbatimTag
-          : NodePropertyEvent.startTag,
+          : NodePropertyEvent.startTag;
 
-    _ => ScalarEvent.startFlowPlain,
-  };
+    case mappingValue:
+      {
+        // key: value
+        if (canBeSeparation) {
+          return isBlockContext
+              ? BlockCollectionEvent.startEntryValue
+              : FlowCollectionEvent.startEntryValue;
+        } else if (!isBlockContext &&
+            (lastKeyWasJsonLike ||
+                charAfter.isNotNullAnd((c) => c.isFlowDelimiter()))) {
+          // JSON-like structures can omit the space.
+          return FlowCollectionEvent.startEntryValue;
+        }
+
+        return _expectNsCharAfter(iterator, charAfter);
+      }
+
+    case blockSequenceEntry:
+      {
+        if (isBlockContext) {
+          return canBeSeparation
+              ? BlockCollectionEvent.startBlockListEntry
+              : _expectNsCharAfter(iterator, charAfter);
+        } else if (charAfter.isNotNullAnd(
+          (e) => !e.isFlowDelimiter() && e.isNonSpaceChar(),
+        )) {
+          // ns-plain-safe-in
+          return ScalarEvent.startFlowPlain;
+        }
+
+        // This character is not allow in a flow context.
+        throwWithSingleOffset(
+          iterator,
+          message: '"-" cannot be used in a flow context.',
+          offset: iterator.currentLineInfo.current,
+        );
+      }
+
+    // ?
+    case mappingKey:
+      {
+        if (canBeSeparation) {
+          return isBlockContext
+              ? BlockCollectionEvent.startExplicitKey
+              : FlowCollectionEvent.startExplicitKey;
+        } else if (!isBlockContext &&
+            charAfter.isNotNullAnd((c) => c.isFlowDelimiter())) {
+          return FlowCollectionEvent.startExplicitKey;
+        }
+
+        return _expectNsCharAfter(iterator, charAfter);
+      }
+
+    default:
+      return ScalarEvent.startFlowPlain;
+  }
 }
 
 /// Infers the next block event.

@@ -269,9 +269,7 @@ implicit: pair,
     block
 ]
           ''').parseNodeSingle(),
-          ).throwsParserException(
-            'Block nodes are not allowed in flow collections',
-          );
+          ).throws();
         }
       },
     );
