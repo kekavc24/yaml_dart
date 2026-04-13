@@ -2,7 +2,7 @@
 
 ![pub_version][dart_pub_version]
 ![pub_downloads][dart_pub_downloads]
-![test_suite](https://img.shields.io/badge/YAML_Test_Suite-89.05%25-green)
+![test_suite](https://img.shields.io/badge/YAML_Test_Suite-89.45%25-green)
 
 > [!NOTE]
 > The package is in a "ready-for-use" state. However, until a `v1.0.0` is released, the package API may have (minor) breaking changes in each minor release.
