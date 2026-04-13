@@ -283,7 +283,10 @@ int? skipToParsableChar(
         skipWhitespace(iterator, skipTabs: true);
         iterator.nextChar();
 
-      case comment:
+      case comment
+          when iterator.before.isNullOr(
+            (c) => c.isWhiteSpace() || c.isLineBreak(),
+          ):
         {
           final (:onExit, :comment) = parseComment(iterator);
           onParseComment(comment);
