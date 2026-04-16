@@ -1,5 +1,9 @@
 # dump_yaml
 
+[![codecov](https://codecov.io/gh/kekavc24/yaml_dart/graph/badge.svg?token=KEAB3HXYL2&flag=dump_yaml)](https://codecov.io/gh/kekavc24/yaml_dart)
+![pub_version][dart_pub_version]
+![pub_downloads][dart_pub_downloads]
+
 A spec-compliant YAML dumper that prioritizes clean YAML documents as its default configuration. It supports all features implemented in most (if not all) YAML parsers.
 
 > [!TIP]
@@ -153,3 +157,6 @@ All contributions are welcome.
 
 - Create an issue if you need help or any features you'd like.
 - See [guide](https://github.com/kekavc24/yaml_dart/blob/main/CONTRIBUTING.md) on how to make contributions to this repository.
+
+[dart_pub_version]: https://img.shields.io/pub/v/dump_yaml.svg
+[dart_pub_downloads]: https://img.shields.io/pub/dm/dump_yaml.svg
