@@ -1,5 +1,7 @@
 # yaml_dart
 
+[![codecov](https://codecov.io/gh/kekavc24/yaml_dart/graph/badge.svg?token=KEAB3HXYL2)](https://codecov.io/gh/kekavc24/yaml_dart)
+
 A collection of `Dart` packages that help you to interact with YAML and the features it supports in the official [spec](https://yaml.org/spec/1.2.2/).
 
 > [!IMPORTANT]
