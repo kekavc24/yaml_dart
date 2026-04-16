@@ -1,0 +1,31 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  range: "80...100"
+  status:
+    project:
+      default:
+        target: 90%
+        threshold: 5%
+
+comment:
+  layout: "diff, flags, files"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "scripts"
+  - "packages/rookie_yaml/test/yaml_test_suite/"
+  - "**/example/"
+
+flags:
+  rookie_yaml:
+    paths:
+      - packages/rookie_yaml
+    carryforward: true
+
+  dump_yaml:
+    paths:
+      - packages/dump_yaml
+    carryforward: true

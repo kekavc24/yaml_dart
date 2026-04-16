@@ -34,9 +34,6 @@ jobs:
         if: ${{ steps.filter.outputs.package-name != 'Naught' }}
         uses: ./.github/actions/test_runner
         with:
-          pr: ${{ github.event.pull_request.number }}
-          pr-SHA: ${{ github.event.pull_request.head.sha }}
-          github-token: ${{ github.token }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
           package-name: ${{ steps.filter.outputs.package-name }}
           package-directory: "${{ github.workspace }}/packages/${{ steps.filter.outputs.package-name }}"
-          coverage-runs: ${{ vars.REPOS }}

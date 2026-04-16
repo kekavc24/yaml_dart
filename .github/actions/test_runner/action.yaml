@@ -2,12 +2,8 @@ name: Test Runner
 description: Runs any tests required for the repo.
 
 inputs:
-  github-token:
-    description: GitHub token
-    required: true
-
-  coverage-runs:
-    description: Previous coverage runs
+  codecov-token:
+    description: Codecov token
     required: true
 
   package-name:
@@ -16,14 +12,6 @@ inputs:
 
   package-directory:
     description: Directory where the package is located.
-    required: true
-
-  pr:
-    description: PR for this check.
-    required: true
-
-  pr-SHA:
-    description: SHA signature for commit
     required: true
 
 runs:
@@ -38,16 +26,10 @@ runs:
         dart run coverage:test_with_coverage
 
     - name: Track Coverage
-      uses: coverallsapp/github-action@v2.3.6
+      uses: codecov/codecov-action@v5
       with:
-        github-token: ${{ inputs.github-token }}
-        file: ${{ inputs.package-directory }}/coverage/lcov.info
-        format: lcov
-        parallel: true
-        flag-name: ${{ inputs.package-name }}
-
-    - name: Complete Coverage
-      uses: coverallsapp/github-action@v2.3.6
-      with:
-        parallel-finished: true
-        carryforward: ${{ inputs.coverage-runs }}
+        fail_ci_if_error: true
+        token: ${{ inputs.codecov-token }}
+        disable_search: true
+        files: ${{ inputs.package-directory }}/coverage/lcov.info
+        flags: ${{ inputs.package-name }}

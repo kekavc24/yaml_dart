@@ -27,6 +27,7 @@ jobs:
 
       - name: Hello Bot
         uses: ./.github/actions/configure_bot
+
       - name: 🎯 Setup Dart
         uses: dart-lang/setup-dart@v1
         with:
@@ -50,20 +51,8 @@ jobs:
           working-directory: ${{ github.workspace }}
           pr: ${{ github.event.pull_request.number }}
 
-      - name: Run Tests
-        if: ${{ steps.filter.outputs.package-name != 'Naught' }}
-        uses: ./.github/actions/test_runner
-        with:
-          pr: ${{ github.event.pull_request.number }}
-          pr-SHA: ${{ github.event.pull_request.head.sha }}
-          github-token: ${{ github.token }}
-          package-name: ${{ steps.filter.outputs.package-name }}
-          package-directory: "${{ github.workspace }}/packages/${{ steps.filter.outputs.package-name }}"
-          coverage-runs: ${{ vars.REPOS }}
-
       - name: Run YAML Test Suite
         if: ${{ steps.filter.outputs.package-name == 'rookie_yaml' }}
-        shell: bash
         env:
           GH_TOKEN: ${{ secrets.BOT_KEY }}
         run: |
@@ -75,3 +64,11 @@ jobs:
             --pr ${{ github.event.pull_request.number }} \
             --tip-SHA ${{ github.event.pull_request.head.sha }} \
             --working-directory "${{ github.workspace }}"
+            
+      - name: Run Tests
+        if: ${{ steps.filter.outputs.package-name != 'Naught' }}
+        uses: ./.github/actions/test_runner
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          package-name: ${{ steps.filter.outputs.package-name }}
+          package-directory: "${{ github.workspace }}/packages/${{ steps.filter.outputs.package-name }}"

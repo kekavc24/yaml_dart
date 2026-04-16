@@ -1,7 +1,5 @@
 # yaml_dart
 
-[![Coverage Status](https://coveralls.io/repos/github/kekavc24/yaml_dart/badge.svg?branch=rookie_yaml_v0.6.0)](https://coveralls.io/github/kekavc24/yaml_dart?branch=rookie_yaml_v0.6.0)
-
 A collection of `Dart` packages that help you to interact with YAML and the features it supports in the official [spec](https://yaml.org/spec/1.2.2/).
 
 > [!IMPORTANT]
