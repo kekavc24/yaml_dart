@@ -1,5 +1,6 @@
 # rookie_yaml
 
+[![codecov](https://codecov.io/gh/kekavc24/yaml_dart/graph/badge.svg?token=KEAB3HXYL2&flag=rookie_yaml)](https://codecov.io/gh/kekavc24/yaml_dart)
 ![pub_version][dart_pub_version]
 ![pub_downloads][dart_pub_downloads]
 ![test_suite](https://img.shields.io/badge/YAML_Test_Suite-89.45%25-green)
