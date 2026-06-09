@@ -1,0 +1,29 @@
+name: Daily Testing Cron
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  testing:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v5
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      - name: Get Deps
+        run: dart pub get
+
+      - name: Run tests
+        working-directory: ${{ github.workspace }}
+        run: |
+          dart test packages/rookie_yaml
+          dart test packages/dump_yaml
