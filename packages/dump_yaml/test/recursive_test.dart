@@ -90,4 +90,10 @@ self: *recursive
              # comments
 ''');
   });
+
+  test('ScalarView has no self reference', () {
+    final view = ScalarView(24);
+    check((view..node = view).node).equals(24);
+    check((view..node = 0).node).equals(0);
+  });
 }

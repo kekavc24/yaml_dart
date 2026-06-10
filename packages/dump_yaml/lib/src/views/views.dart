@@ -114,6 +114,12 @@ final class ScalarView extends ConcreteNode<String> {
   @override
   ScalarToString toFormat;
 
+  @override
+  set node(Object? value) {
+    if (identical(value, this)) return;
+    super.node = value;
+  }
+
   /// Scalar style associated with this view.
   ScalarStyle scalarStyle = ScalarStyle.plain;
 
