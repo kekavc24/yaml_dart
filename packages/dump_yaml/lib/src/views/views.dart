@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 
@@ -50,10 +52,29 @@ typedef MapToYaml = ObjectFromView<YamlMappingEntry>;
 
 /// Obtains the entries of the [object]. If not a map, the [object] is treated
 /// as a key with a null value.
-YamlMappingEntry mapping(Object? object) =>
-    object is Map ? object.entries : [MapEntry(object, null)];
+YamlMappingEntry _mapping(Object? object) {
+  MapEntry<Object?, Object?> wrap(Object? toWrap) =>
+      toWrap is MapEntry ? toWrap : MapEntry(toWrap, null);
+
+  return switch (object) {
+    Map() => object.entries,
+    Iterable() => object.fold(
+      LinkedHashSet(
+        equals: (k1, k2) => yamlCollectionEquality.equals(k1.key, k2.key),
+        hashCode: (p0) => yamlCollectionEquality.hash(p0.key),
+      ),
+      (buff, next) {
+        (buff as LinkedHashSet).add(wrap(next));
+        return buff;
+      },
+    ),
+    _ => [wrap(object)],
+  };
+}
 
 /// A mutable view for a [Map]-like object that can have YAML node properties.
+/// Unlike [ScalarView] and [YamlIterable], its `toFormat` getter cannot be
+/// overriden due to the sensitive nature of yaml [Map]s.
 ///
 /// {@category dumpable_view}
 /// {@category dump_map}
@@ -65,13 +86,13 @@ final class YamlMapping extends ConcreteNode<YamlMappingEntry> {
   /// callback that will be called when the map is being dumped.
   ///
   /// This view inherits the [node]'s hashcode and equality implementation.
-  YamlMapping(super.node, {this.toFormat = mapping});
+  YamlMapping(super.node);
 
   @override
   NodeStyle nodeStyle = NodeStyle.block;
 
   @override
-  MapToYaml toFormat;
+  MapToYaml get toFormat => _mapping;
 }
 
 /// Maps any object to a scalar.

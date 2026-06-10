@@ -6,26 +6,7 @@ import 'package:dump_yaml/src/event_tree/scalar_content.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:dump_yaml/src/views/views.dart';
-import 'package:rookie_yaml/rookie_yaml.dart'
-    show
-        GlobalTag,
-        NodeStyle,
-        ResolvedTag,
-        ScalarStyle,
-        TagHandle,
-        TagHandleVariant,
-        TagShorthand,
-        booleanTag,
-        floatTag,
-        integerTag,
-        mappingTag,
-        nullTag,
-        resolvedTagInfo,
-        sequenceTag,
-        stringTag,
-        throwIfNotListTag,
-        throwIfNotMapTag,
-        throwIfNotScalarTag;
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 extension on String {
   String capFirst() =>
@@ -384,10 +365,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       comments: comments,
       commentStyle: commentStyle,
       visit: (recursive, object) => _buildMap(
-        LinkedHashSet<MapEntry<Object?, Object?>>(
-          equals: (p0, p1) => p0.key == p1.key,
-          hashCode: (p0) => p0.key.hashCode,
-        )..addAll(mapping.toFormat(object)),
+        mapping.toFormat(object),
         style: mapping.nodeStyle,
         forceInline: mapping.forceInline || _inlineRules.last,
         comments: comments,

@@ -108,17 +108,19 @@ void main() {
 
     test('Removes duplicates from a custom YamlMapping', () {
       treeBuilder.buildFor(
-        YamlMapping(
-          [('sneaky', 'entry'), ('sneaky', 'entry')],
-          toFormat: (object) => (object as List<(String, String)>).map(
-            (e) => MapEntry(e.$1, e.$2),
-          ),
-        ),
+        YamlMapping([
+          ('sneaky', 'entry'),
+          ('sneaky', 'entry'),
+          MapEntry(['key'], null),
+          ['key'],
+          {'key': 'value'},
+          {'key': 'value'},
+        ]),
       );
 
       check(
         treeBuilder.builtNode(),
-      ).isA<MapNode>().whoseNode().length.equals(1);
+      ).isA<MapNode>().whoseNode().length.equals(3);
     });
 
     test('Throws if tags are mismatched', () {

@@ -382,11 +382,11 @@ key: 24
   });
 
   group('Key tests', () {
+    setUp(() => dumper.reset());
+
     test(
       'Converts implicit key if length is greater than 1024 unicode characters',
       () {
-        dumper.reset();
-
         final explicit = _randomImplicitKey(1025);
         final implicit = _randomImplicitKey(1024);
         dumper.dump({explicit: 'explicit', implicit: 'implicit'});
@@ -403,8 +403,6 @@ key: 24
       'Converst alias to explicit if length is greater than 1024 unicode '
       'characters',
       () {
-        dumper.reset();
-
         final anchor = _randomImplicitKey(1100);
         final key = ScalarView('implicit')..anchor = anchor;
         dumper.dump({key: 'hello', Alias(anchor): 'alias'});
