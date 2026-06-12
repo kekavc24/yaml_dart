@@ -81,7 +81,12 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
     }
   }
 
-  final (keyProp, mapProp) = (keyOrMapProperty?.isMultiline ?? false)
+  // Prefer handing off properties to the map moreso when no properties are
+  // present. The map should hold the structual offset at all times. Not the
+  // key.
+  final (keyProp, mapProp) =
+      keyOrMapProperty != null &&
+          (keyOrMapProperty.isMultiline || !keyOrMapProperty.parsedAny)
       ? (null, keyOrMapProperty)
       : (keyOrMapProperty, null);
 
