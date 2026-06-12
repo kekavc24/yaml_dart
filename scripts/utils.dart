@@ -34,10 +34,10 @@ T runCommand<T>(
   return mOrN(stdout);
 }
 
-const _defaultPassRate = 0.0;
+const _defaultPassRate = '0.0';
 
 /// Reads the current pass rate attached to the `README.md` file
-double getCurrentPassRate(String rootDirectory) {
+String getCurrentPassRate(String rootDirectory) {
   final file = File(path.join(rootDirectory, 'README.md'));
 
   if (!file.existsSync()) return _defaultPassRate;
@@ -54,8 +54,7 @@ double getCurrentPassRate(String rootDirectory) {
     );
 
     // Remove trailing color -> "%25-green)"
-    return double.tryParse(trailing.substring(0, trailing.lastIndexOf('%'))) ??
-        _defaultPassRate;
+    return trailing.substring(0, trailing.lastIndexOf('%'));
   }
 
   return _defaultPassRate;

@@ -33,7 +33,7 @@ const _keyPass = 'Tests passing:';
 
 /// Compares the current pass rate in the repo and the latest pass rate obtained
 /// from the current PR.
-({double currentPassRate, double prPassRate, String diff}) _passRateDiff(
+({String currentPassRate, double prPassRate, String diff}) _passRateDiff(
   String rootDirectory,
   String summary,
 ) {
@@ -54,9 +54,9 @@ const _keyPass = 'Tests passing:';
   return (
     currentPassRate: currentInRepo,
     prPassRate: rateOnPR,
-    diff: currentInRepo == rateOnPR
+    diff: currentInRepo == rateOnPR.toStringAsFixed(2)
         ? 'No change ☑️'
-        : currentInRepo > rateOnPR
+        : (double.tryParse(currentInRepo) ?? 0) > rateOnPR
         ? 'Regression detected ‼️'
         : 'Possible fix ✅',
   );
