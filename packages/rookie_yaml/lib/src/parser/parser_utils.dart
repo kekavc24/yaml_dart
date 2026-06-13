@@ -283,11 +283,21 @@ int? skipToParsableChar(
         skipWhitespace(iterator, skipTabs: true);
         iterator.nextChar();
 
-      case comment
-          when iterator.before.isNullOr(
-            (c) => c.isWhiteSpace() || c.isLineBreak(),
-          ):
+      case comment:
         {
+          if (!iterator.before.isNullOr(
+            (c) => c.isWhiteSpace() || c.isLineBreak(),
+          )) {
+            throwWithApproximateRange(
+              iterator,
+              message:
+                  'A comment indicator must be the first possible char or be '
+                  'preceded by a whitespace/line break',
+              current: iterator.currentLineInfo.current,
+              charCountBefore: 1,
+            );
+          }
+
           final (:onExit, :comment) = parseComment(iterator);
           onParseComment(comment);
 
