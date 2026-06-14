@@ -67,6 +67,7 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
     final indentOrSeparation = skipToParsableChar(
       iterator,
       onParseComment: onParseComment,
+      allowTabs: (currentIndent, _) => currentIndent == null,
     );
 
     // Indent must be null. This must be an inlined key

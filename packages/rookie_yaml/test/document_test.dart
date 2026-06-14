@@ -410,11 +410,11 @@ My node starts here
     });
 
     test('Skips leading whitespace as', () {
-      const yaml = ' My node starts here';
+      final scanner = UnicodeIterator.ofString(' My node starts here');
 
-      final scanner = UnicodeIterator.ofString(yaml);
-
-      check(skipToParsableChar(scanner, onParseComment: (_) {})).isNull();
+      check(
+        skipToParsableChar(scanner, onParseComment: (_) {}, isRoot: true),
+      ).isNull();
       check(scanner.current.asString()).equals('M');
     });
 

@@ -122,6 +122,7 @@ BlockNode<Obj> parseFlowNodeInBlock<Obj>(
     ),
   };
 
+  // TODO: isRoot
   final indentOfNextNode = skipToParsableChar(
     state.iterator,
     onParseComment: state.onParseComment,

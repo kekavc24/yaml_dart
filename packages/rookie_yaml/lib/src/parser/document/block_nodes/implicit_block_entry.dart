@@ -92,22 +92,38 @@ BlockInfo parseImplicitValue<Obj>(
 
   iterator.nextChar();
 
-  /// It's better if we determine the actual state of the value here before
-  /// handing this off to [parseBlockNode]
+  var composeBlockCollection = true;
+
+  // It's better if we determine the actual state of the value here before
+  // handing this off to [parseBlockNode]
   var indentOrSeparation = skipToParsableChar(
     iterator,
     onParseComment: state.onParseComment,
+    allowTabs: (currentIndent, hasTabs) {
+      // We only allow tabs in a context we can control, which is, this key's
+      // value via the [composeBlockCollection] variable. We don't want the
+      // previous parsing context handling a dirty state when Dart unrolls this
+      // recursive context.
+      if (hasTabs) {
+        final isInline = currentIndent == null;
+        composeBlockCollection = isInline;
+        return isInline || currentIndent > keyIndent;
+      }
+
+      return true;
+    },
   );
 
   final hasIndent = indentOrSeparation != null;
   final valueIndent = keyIndent + 1;
+  final event = eventCallback();
 
   // Exit if we cannot parse an implicit value as a block node
   if (hasIndent && indentOrSeparation < valueIndent) {
     // Check if we should exit or recover and parse a block sequence.
     if (iterator.isEOF ||
         indentOrSeparation < keyIndent ||
-        eventCallback() != BlockCollectionEvent.startBlockListEntry) {
+        event != BlockCollectionEvent.startBlockListEntry) {
       onValue(
         nullScalarDelegate(
             indentLevel: keyIndentLevel,
@@ -131,9 +147,10 @@ BlockInfo parseImplicitValue<Obj>(
       onSequence: onValue,
       onNextImplicitEntry: onEntryValue,
     ).blockInfo;
-  } else if (eventCallback()
+  } else if (event
       case BlockCollectionEvent.startBlockListEntry ||
-          BlockCollectionEvent.startExplicitKey when !hasIndent) {
+          BlockCollectionEvent.startExplicitKey
+      when !hasIndent || !composeBlockCollection) {
     throwWithRangedOffset(
       iterator,
       message:
@@ -167,8 +184,8 @@ BlockInfo parseImplicitValue<Obj>(
       laxBlockIndent: valueIndent,
       fixedInlineIndent: valueIndent,
       forceInlined: false,
-      composeImplicitMap: hasIndent,
-      canComposeMapIfMultiline: true,
+      composeImplicitMap: hasIndent && composeBlockCollection,
+      canComposeMapIfMultiline: composeBlockCollection,
       structuralOffset: indicatorOffset,
     ),
     keyIndent: keyIndent,

@@ -93,9 +93,10 @@ _SequenceState _sequenceNodeOrMarker(
 
     // Be mechanical. Call [parseBlockNode] only after we determine the correct
     // indent range for this node.
-    final indentOrSeparation = skipToParsableChar(
+    final (:indentOrSeparation, :composeMap) = skipToElementStart(
       iterator,
       onParseComment: onParseComment,
+      structuralOffset: indicatorOffset,
     );
 
     final isNextLevel = indentOrSeparation != null;
@@ -139,7 +140,7 @@ _SequenceState _sequenceNodeOrMarker(
         laxBlockIndent: entryIndent,
         fixedInlineIndent: inlineFixedIndent,
         forceInlined: false,
-        composeImplicitMap: true,
+        composeImplicitMap: composeMap,
         structuralOffset: indicatorOffset,
       );
 

@@ -212,7 +212,16 @@ ParsedProperty _corePropertyParser(
   bool isMultiline() => lfCount > 0;
 
   void skipAndTrackLF() {
-    indentOnExit = skipToParsableChar(iterator, onParseComment: onParseComment);
+    indentOnExit = skipToParsableChar(
+      iterator,
+      onParseComment: onParseComment,
+      allowTabs: (currentIndent, _) {
+        final isSeparation = currentIndent == null;
+        return isBlockContext
+            ? isSeparation
+            : isSeparation || currentIndent >= minIndent;
+      },
+    );
     if (indentOnExit != null) ++lfCount;
   }
 
@@ -416,7 +425,8 @@ ConcreteProperty parseFlowProperties(
     }
   }
 
-  // Move to the next parsable non-ws char
+  // Move to the next parsable non-ws char.
+  // TODO: 50/50 with [nextSafeLineInFlow]. Test this.
   throwIfLessIndent(
     skipToParsableChar(iterator, onParseComment: onParseComment),
   );

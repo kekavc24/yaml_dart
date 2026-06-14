@@ -1,4 +1,5 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -338,4 +339,83 @@ int? skipToParsableChar(
   }
 
   return indent;
+}
+
+typedef BlockElementInfo = ({int? indentOrSeparation, bool composeMap});
+
+/// Skips to the next parsable content of a block collection's element.
+///
+/// This function should be called when looking past a block collection's
+/// explicit indicator. The indicator's offset is represented by the
+/// [structuralOffset].
+BlockElementInfo skipToElementStart(
+  SourceIterator iterator, {
+  required void Function(YamlComment comment) onParseComment,
+  required RuneOffset structuralOffset,
+}) {
+  if (iterator.current != space) {
+    return _skipToBlockElementChar(
+      iterator,
+      onParseComment: onParseComment,
+      structuralOffset: structuralOffset,
+    );
+  }
+
+  skipWhitespace(iterator);
+  iterator.nextChar();
+
+  if (iterator.current.matches(
+    (i) => i == tab || i.isLineBreak() || i == comment,
+  )) {
+    return _skipToBlockElementChar(
+      iterator,
+      onParseComment: onParseComment,
+      structuralOffset: structuralOffset,
+    );
+  }
+
+  return (indentOrSeparation: null, composeMap: true);
+}
+
+/// Skips any comments and linebreaks until a character that can be parsed
+/// is encountered. Returns `null` if no indent was found.
+///
+/// This function treats tabs as separation and should be called when parsing
+/// nested block nodes. In such cases, YAML expects the tab to followed by a
+/// line break or more whitespace leading to a line break. Anything else is
+/// invalid YAML grammar.
+BlockElementInfo _skipToBlockElementChar(
+  SourceIterator iterator, {
+  required void Function(YamlComment comment) onParseComment,
+  required RuneOffset structuralOffset,
+}) {
+  var compose = true;
+
+  final indent = skipToParsableChar(
+    iterator,
+    onParseComment: onParseComment,
+    allowTabs: (currentIndent, hasTabs) {
+      if (hasTabs) {
+        compose = false;
+        return currentIndent == null; // Inlined
+      }
+
+      return true;
+    },
+  );
+
+  if (compose) {
+    return (indentOrSeparation: indent, composeMap: true);
+  } else if (inferBlockEvent(iterator) case BlockCollectionEvent()) {
+    throwWithRangedOffset(
+      iterator,
+      message:
+          'Tabs cannot be used as separation spaces between block collection '
+          'indicators',
+      start: structuralOffset,
+      end: iterator.currentLineInfo.current,
+    );
+  }
+
+  return (indentOrSeparation: indent, composeMap: false);
 }

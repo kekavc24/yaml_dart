@@ -78,7 +78,12 @@ bool nextSafeLineInFlow(
   required bool forceInline,
   required void Function(YamlComment comment) onParseComment,
 }) {
-  final indent = skipToParsableChar(iterator, onParseComment: onParseComment);
+  final indent = skipToParsableChar(
+    iterator,
+    onParseComment: onParseComment,
+    allowTabs: (currentIndent, _) =>
+        currentIndent == null || currentIndent >= minIndent,
+  );
 
   if (indent != null) {
     // Must not have line breaks

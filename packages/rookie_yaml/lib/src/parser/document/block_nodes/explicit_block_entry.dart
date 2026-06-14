@@ -29,9 +29,10 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
   iterator.nextChar();
 
-  final indentOrSeparation = skipToParsableChar(
+  final (:indentOrSeparation, :composeMap) = skipToElementStart(
     iterator,
     onParseComment: state.onParseComment,
+    structuralOffset: explicitCharOffset,
   );
 
   final isNextLevel = indentOrSeparation != null;
@@ -97,7 +98,7 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
       laxBlockIndent: indent + 1,
       fixedInlineIndent: inlineFixedIndent,
       forceInlined: false,
-      composeImplicitMap: true,
+      composeImplicitMap: composeMap,
       structuralOffset: explicitCharOffset,
     ),
     keyIndent: indent,

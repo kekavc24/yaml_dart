@@ -179,10 +179,11 @@ BlockNode<Obj> _safeBlockState<Obj>(
   if (!iterator.isEOF &&
       !blockInfo.docMarker.stopIfParsingDoc &&
       (blockInfo.exitIndent == seamlessIndentMarker ||
-          iterator.current == comment)) {
+          iterator.current.matches((i) => i.isWhiteSpace() || i == comment))) {
     final indent = skipToParsableChar(
       iterator,
       onParseComment: state.onParseComment,
+      allowTabs: (currentIndent, hasTabs) => currentIndent == null && !hasTabs,
     );
 
     return (
@@ -285,7 +286,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
   //
   // [*] Can actually degenerate
   //
-  // key:
+  // key: !!map
   //   value: degenerate
   //
   // See [parseImplicitValue]

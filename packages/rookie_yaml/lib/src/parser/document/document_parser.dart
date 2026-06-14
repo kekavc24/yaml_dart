@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
