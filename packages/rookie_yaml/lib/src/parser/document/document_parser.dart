@@ -132,6 +132,7 @@ final class DocumentParser<Doc, R> {
       iterator,
       onParseComment: onParseComment,
       leadingAsIndent: !_state.docStartExplicit,
+      isRoot: true,
     );
 
     iterator.skipBOM();
@@ -176,6 +177,7 @@ final class DocumentParser<Doc, R> {
         iterator,
         onParseComment: onParseComment,
         leadingAsIndent: !isInlineWithMarker,
+        isRoot: true,
       );
 
       _throwIfBlockUnsafe(
@@ -324,10 +326,9 @@ extension<Doc, R> on DocumentParser<Doc, R> {
       return;
     }
 
-    var charBehind = 0;
     final marker = checkForDocumentMarkers(
       iterator,
-      onMissing: (b) => charBehind = b.length,
+      onMissing: null,
       throwIfDocEndInvalid: true,
     );
 
@@ -337,13 +338,11 @@ extension<Doc, R> on DocumentParser<Doc, R> {
       return;
     }
 
-    throwWithApproximateRange(
+    throwForCurrentLine(
       iterator,
       message:
           'Invalid node state. Expected to find document end "..."'
           ' or directive end chars "---" ',
-      current: iterator.currentLineInfo.current,
-      charCountBefore: iterator.hasNext ? max(charBehind - 1, 0) : charBehind,
     );
   }
 
