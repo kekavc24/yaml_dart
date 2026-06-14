@@ -232,38 +232,42 @@ DocumentMarker checkForDocumentMarkers(
 /// Skips any comments and linebreaks until a character that can be parsed
 /// is encountered. Returns `null` if no indent was found.
 ///
-/// If [leadingAsIndent] is `true`, leading white spaces are treated as indent
-/// as though the previous character.
+/// If [leadingAsIndent] is `true`, leading white spaces are treated as indent.
 ///
-/// You must provide either [comments] or an [onParseComment] [Function]
+/// If [isRoot] is `false` and a call to [allowTabs] with the current indent
+/// returns `false`, an [Exception] is thrown. This is because the tabs are
+/// treated as separation and the parser expects a line break or comment after
+/// any whitespace grouped with the tab.
 int? skipToParsableChar(
   SourceIterator iterator, {
   required void Function(YamlComment comment) onParseComment,
   bool leadingAsIndent = false,
+  bool isRoot = false,
+  bool Function(int? currentIndent, bool hasTabs)? allowTabs,
 }) {
+  final allowAsSeparation = allowTabs ?? (_, _) => true;
   int? indent;
 
-  var warmUp = true;
-
   void checkIndent() {
+    if (iterator.current != space) {
+      indent = 0;
+      return;
+    }
+
     indent = takeFromIteratorUntil(
       iterator,
-      includeCharAtCursor: warmUp && iterator.current == space,
-      mapper: (c) => c,
+      includeCharAtCursor: true,
+      mapper: (t) => t,
       onMapped: (_) {},
-      stopIf: (_, possibleNext) => !possibleNext.isIndent(),
+      stopIf: (_, next) => !next.isIndent(),
     );
 
-    if (iterator.isEOF) return;
-
     iterator.nextChar();
-    warmUp = false;
+    indent = iterator.isEOF ? null : indent;
+  }
 
-    if (leadingAsIndent) return;
-
-    if (iterator.current == tab) {
-      skipWhitespace(iterator, skipTabs: true);
-    }
+  if (leadingAsIndent && iterator.current == space) {
+    checkIndent();
   }
 
   skipper:
@@ -272,16 +276,39 @@ int? skipToParsableChar(
       case carriageReturn || lineFeed:
         {
           skipCrIfPossible(iterator.current, iterator: iterator);
+          iterator.nextChar();
           checkIndent();
         }
 
-      // Check if leading whitespace can be indent
-      case space when leadingAsIndent:
-        checkIndent();
+      case space || tab:
+        {
+          var hasTabs = iterator.current == tab;
 
-      case space || tab when !leadingAsIndent:
-        skipWhitespace(iterator, skipTabs: true);
-        iterator.nextChar();
+          skipWhitespace(
+            iterator,
+            skipTabs: true,
+            hasTabs: () => hasTabs = true,
+          );
+
+          iterator.nextChar();
+
+          final char = iterator.current;
+
+          // Tabs are strictly used for separation.
+          if (iteratedIsEOF(char)) {
+            indent = null;
+            break skipper;
+          } else if (char.matches((c) => c.isLineBreak() || c == comment)) {
+            break;
+          } else if (!isRoot && !allowAsSeparation(indent, hasTabs)) {
+            throwForCurrentLine(
+              iterator,
+              message:
+                  'Spaces/tabs cannot be used here as indent before the current'
+                  ' node',
+            );
+          }
+        }
 
       case comment:
         {

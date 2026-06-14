@@ -359,13 +359,32 @@ List<int> skipWhitespace(
   bool skipTabs = false,
   int? max,
   List<int>? previouslyRead,
+  void Function()? hasTabs,
 }) {
   final buffer = previouslyRead ?? [];
   final hasMax = max != null;
+  final callTabs = hasTabs ?? () {};
+
+  var tabCount = 0;
 
   bool isMatch(int? char) {
-    if (char == null) return false;
-    return skipTabs ? char.isWhiteSpace() : char.isIndent();
+    switch (char) {
+      case tab:
+        {
+          if (skipTabs) {
+            ++tabCount;
+            return true;
+          }
+
+          return false;
+        }
+
+      case space:
+        return true;
+
+      default:
+        return false;
+    }
   }
 
   while (iterator.hasNext &&
@@ -375,6 +394,7 @@ List<int> skipWhitespace(
     buffer.add(iterator.current);
   }
 
+  if (tabCount > 0) callTabs();
   return buffer;
 }
 
