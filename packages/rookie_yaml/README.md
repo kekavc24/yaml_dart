@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/kekavc24/yaml_dart/graph/badge.svg?token=KEAB3HXYL2&flag=rookie_yaml)](https://codecov.io/gh/kekavc24/yaml_dart)
 ![pub_version][dart_pub_version]
 ![pub_downloads][dart_pub_downloads]
-![test_suite](https://img.shields.io/badge/YAML_Test_Suite-96.44%25-green)
+![test_suite](https://img.shields.io/badge/YAML_Test_Suite-96.69%25-green)
 
 > [!NOTE]
 > The package is in a "ready-for-use" state. However, until a `v1.0.0` is released, the package API may have (minor) breaking changes in each minor release.
