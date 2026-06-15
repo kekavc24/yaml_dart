@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:rookie_yaml/src/loaders/loader.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
@@ -273,5 +274,19 @@ implicit: pair,
         }
       },
     );
+
+    test('Throws when tabs are used as indent', () {
+      check(
+        () => loadObject(
+          YamlSource.string('''
+key:
+  {key:
+  !!map
+\tnext 
+ }
+'''),
+        ),
+      ).throws();
+    });
   });
 }

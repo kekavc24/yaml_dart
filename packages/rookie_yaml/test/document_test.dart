@@ -1,11 +1,6 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/schema.dart';
-import 'package:rookie_yaml/src/schema/yaml_comment.dart';
-import 'package:rookie_yaml/src/schema/yaml_node.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
@@ -438,6 +433,12 @@ My node starts here
         'This is a comment',
         'This is another',
       ]);
+    });
+
+    test('Throws if comments are not preceded by whitespace', () {
+      check(
+        () => loadObject(YamlSource.string('[element, key,# comment]')),
+      ).throws();
     });
   });
 }

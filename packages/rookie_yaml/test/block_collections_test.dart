@@ -548,4 +548,82 @@ key:
       );
     });
   });
+
+  group('Grammar adherence', () {
+    test('Tabs as separation in compact collection throws', () {
+      void compactThrows(String yaml) {
+        check(() => loadObject(YamlSource.string(yaml))).throws();
+      }
+
+      compactThrows('-\t- compact');
+      compactThrows('?\t? compact key');
+      compactThrows('-\t? compact map');
+      compactThrows('?\t- compact list');
+    });
+
+    test('Tab separated value never degenerates to map', () {
+      check(
+        loadObject(
+          YamlSource.string(
+            'key:\n'
+            ' \tvalid syntax',
+          ),
+        ),
+      ).isA<Map>().deepEquals({'key': 'valid syntax'});
+
+      check(
+        () => loadObject(
+          YamlSource.string(
+            'key:\n'
+            ' \tcannot: form-nested-map',
+          ),
+        ),
+      ).throws();
+    });
+
+    test('Tabs separated degenerates to map if properties are multiline', () {
+      const map = {'key': 'value'};
+
+      void degenerates<T>(
+        String yaml,
+        void Function(Subject<T> object) checker,
+      ) {
+        checker(check(loadObject(YamlSource.string(yaml))));
+      }
+
+      degenerates(
+        '?\t!!map\n'
+        '  key: value',
+        (obj) => obj.isA<Map>().deepEquals({map: null}),
+      );
+
+      degenerates(
+        '-\t!!map\n'
+        '  key: value',
+        (obj) => obj.isA<List>().deepEquals([map]),
+      );
+
+      degenerates(
+        'implicit:\n'
+        '  \t!!map\n'
+        ' key: value',
+        (obj) => obj.isA<Map>().deepEquals({'implicit': map}),
+      );
+    });
+
+    test(
+      'Throws when dangling tabs results in an invalid block node state',
+      () {
+        check(
+          () => loadObject(
+            YamlSource.string('''
+key: 
+  nested: value
+ \ttab: key 
+'''),
+          ),
+        ).throws();
+      },
+    );
+  });
 }
