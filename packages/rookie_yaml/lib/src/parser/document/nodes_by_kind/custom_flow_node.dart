@@ -8,7 +8,6 @@ NodeDelegate<Obj> customFlowNode<Obj>(
   required ParserEvent flowEvent,
   required int currentIndentLevel,
   required int minIndent,
-  required bool isImplicit,
   required bool forceInline,
 }) => _parseCustomKind<NodeDelegate<Obj>, Obj>(
   kind,
@@ -47,7 +46,7 @@ NodeDelegate<Obj> customFlowNode<Obj>(
 
       return delegate;
     },
-    isImplicit: isImplicit,
+    isImplicit: forceInline,
     isInFlowContext: true,
     indentLevel: currentIndentLevel,
     minIndent: minIndent,

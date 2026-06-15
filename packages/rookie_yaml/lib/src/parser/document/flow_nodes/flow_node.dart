@@ -67,7 +67,6 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
   ParserState<Obj> state, {
   required int currentIndentLevel,
   required int minIndent,
-  required bool isImplicit,
   required bool forceInline,
   required int collectionDelimiter,
   bool lastKeyWasJsonLike = false,
@@ -92,7 +91,7 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
     );
   } else if (property.parsedAny) {
     if (property.isMultiline &&
-        (isImplicit || forceInline) &&
+        forceInline &&
         (!iterator.isEOF &&
             iterator.current != collectionDelimiter &&
             iterator.current != flowEntryEnd)) {
@@ -123,7 +122,6 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
             flowEvent: event,
             currentIndentLevel: currentIndentLevel,
             minIndent: minIndent,
-            isImplicit: isImplicit,
             forceInline: forceInline,
           ),
           property,
@@ -138,7 +136,6 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
       property: property,
       currentIndentLevel: currentIndentLevel,
       minIndent: minIndent,
-      isImplicit: isImplicit,
       forceInline: forceInline,
     ),
     property,
@@ -156,11 +153,9 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
   required ParserEvent flowEvent,
   required int currentIndentLevel,
   required int minIndent,
-  required bool isImplicit,
   required bool forceInline,
 }) {
   final (:start, :end) = property.span; // Always use property offset
-  final isInline = isImplicit || forceInline;
 
   if (kind is CustomKind) {
     return customFlowNode(
@@ -170,7 +165,6 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
       flowEvent: flowEvent,
       currentIndentLevel: currentIndentLevel,
       minIndent: minIndent,
-      isImplicit: isImplicit,
       forceInline: forceInline,
     );
   }
@@ -183,13 +177,13 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
       parserState,
       indentLevel: currentIndentLevel,
       minIndent: minIndent,
-      forceInline: isInline,
+      forceInline: forceInline,
     ),
     onMatchSequence: () => parseFlowSequence(
       parserState,
       indentLevel: currentIndentLevel,
       minIndent: minIndent,
-      forceInline: isInline,
+      forceInline: forceInline,
       kind: kind,
     ),
     onMatchScalar: (scalarKind) {
@@ -200,7 +194,7 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
           onDefault: parserState.defaultScalar(),
           scalarFunction: parserState.scalarFunction,
           onParseComment: parserState.onParseComment,
-          isInline: isInline,
+          isInline: forceInline,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
           delegateScalar: scalarImpls(scalarKind),
@@ -219,7 +213,6 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
       property: property,
       currentIndentLevel: currentIndentLevel,
       minIndent: minIndent,
-      isImplicit: isImplicit,
       forceInline: forceInline,
     ),
   );
@@ -233,7 +226,6 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
   required ParsedProperty property,
   required int currentIndentLevel,
   required int minIndent,
-  required bool isImplicit,
   required bool forceInline,
 }) {
   switch (event) {
@@ -264,7 +256,7 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
           parserState,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
-          forceInline: isImplicit || forceInline,
+          forceInline: forceInline,
         );
       }
 
@@ -276,7 +268,7 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
           onDefault: parserState.defaultScalar(),
           scalarFunction: parserState.scalarFunction,
           onParseComment: parserState.onParseComment,
-          isInline: isImplicit || forceInline,
+          isInline: forceInline,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
           defaultToString: isGenericNode(property),
@@ -289,7 +281,7 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
           parserState,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
-          forceInline: isImplicit || forceInline,
+          forceInline: forceInline,
         );
       }
 

@@ -40,6 +40,18 @@ void main() {
       ).equals({'implicit key': 'value', 'explicit key': 'value'}.toString());
     });
 
+    test('Parses multiline implicit flow keys', () {
+      check(
+        bootstrapDocParser(
+          '{'
+          'implicit-key-not-inline'
+          '\n splits-here'
+          ': value'
+          '}',
+        ).nodeAsSimpleString(),
+      ).equals('{implicit-key-not-inline splits-here: value}');
+    });
+
     test('Parses empty entry node declared explicitly', () {
       const yaml = '{ ? ? }';
 
@@ -179,21 +191,6 @@ implicit: pair,
       ).throwsParserException(err);
     });
 
-    test("Throws if implicit key spans multiple lines", () {
-      check(
-        () => bootstrapDocParser(
-          '{'
-          'implicit-key-not-inline'
-          '\n splits-here'
-          ': value'
-          '}',
-        ).nodeAsSimpleString(),
-      ).throwsParserException(
-        'Expected a next flow entry indicator "," or a map value indicator ":" '
-        'or a terminating delimiter "}"',
-      );
-    });
-
     test(
       "Throws if flow sequence doesn't start/end with sequence delimiters",
       () {
@@ -282,7 +279,7 @@ implicit: pair,
 key:
   {key:
   !!map
-\tnext 
+\tnext
  }
 '''),
         ),

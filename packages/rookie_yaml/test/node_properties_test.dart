@@ -513,7 +513,7 @@ $tag ignored :)
 ''',
           ).parseNodeSingle(),
         ).throwsParserException(
-          'Flow node cannot span multiple lines when implicit',
+          'An explicit compact flow entry cannot have properties',
         );
       },
     );
@@ -530,20 +530,6 @@ implicit-2: is-an-error
         ).parseNodeSingle(),
       ).throwsParserException(
         'Implicit block nodes cannot span multiple lines',
-      );
-
-      check(
-        () => bootstrapDocParser(
-          '''
-{
-!tag-okay implicit-1: is-fine,
-
-!this-is-not-okay
-implicit-2: is-an-error}
-''',
-        ).parseNodeSingle(),
-      ).throwsParserException(
-        'Flow node cannot span multiple lines when implicit',
       );
     });
 

@@ -37,7 +37,6 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
     state,
     currentIndentLevel: indentLevel,
     minIndent: minIndent,
-    isImplicit: false,
     forceInline: forceInline,
     collectionDelimiter: flowSequenceEnd,
   );
@@ -76,7 +75,6 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
     state,
     currentIndentLevel: indentLevel + 1,
     minIndent: minIndent,
-    isImplicit: true,
     forceInline: true,
     collectionDelimiter: flowSequenceEnd,
   );
