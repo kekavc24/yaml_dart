@@ -19,7 +19,11 @@ void throwIfDocEndInQuoted(
 }) {
   final start = iterator.currentLineInfo.current;
 
-  if (checkForDocumentMarkers(iterator, onMissing: onDocMissing)
+  if (checkForDocumentMarkers(
+        iterator,
+        onMissing: onDocMissing,
+        throwIfDocEndInvalid: true,
+      )
       case DocumentMarker.directiveEnd || DocumentMarker.documentEnd) {
     throwWithRangedOffset(
       iterator,

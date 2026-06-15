@@ -141,6 +141,7 @@ ParsedScalarInfo? plainParser(
             // Minimalistic closure. Assume we have whitespaces and linebreaks
             // present. Akin to a sequential write.
             onMissing: foldingBuffer.addAll,
+            throwIfDocEndInvalid: true,
           );
 
           if (docMarkerType.stopIfParsingDoc) {

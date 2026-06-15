@@ -200,7 +200,8 @@ DocumentMarker checkForDocumentMarkers(
             iterator.current == comment ||
             iterator.current.isLineBreak()) {
           return DocumentMarker.documentEnd;
-        } else if (!throwIfDocEndInvalid) {
+        } else if (!throwIfDocEndInvalid ||
+            iterator.before.isNotNullAnd((c) => !c.isWhiteSpace())) {
           onBufferred();
           return DocumentMarker.none;
         }

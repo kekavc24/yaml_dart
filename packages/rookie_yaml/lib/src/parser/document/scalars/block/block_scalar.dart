@@ -188,7 +188,9 @@ ParsedScalarInfo blockScalarParser(
           didRun = true;
         }
 
-      case blockSequenceEntry || period when trueIndent == 0:
+      case blockSequenceEntry || period
+          when trueIndent == 0 &&
+              iterator.before.isNotNullAnd((c) => c.isLineBreak()):
         {
           // Ends when we see first "-" of "---" or "." of "..."
           final maybeEnd = iterator.currentLineInfo.current;
@@ -196,6 +198,7 @@ ParsedScalarInfo blockScalarParser(
           docMarkerType = checkForDocumentMarkers(
             iterator,
             onMissing: (chars) => bufferHelper(chars, blockBuffer),
+            throwIfDocEndInvalid: true,
           );
 
           if (docMarkerType.stopIfParsingDoc) {
