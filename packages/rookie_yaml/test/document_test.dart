@@ -388,6 +388,20 @@ First document
         );
       },
     );
+
+    test('Looks past document end chars that are false positive', () {
+      void ignoreFalsePositive(String yaml) {
+        check(() => loadObject(YamlSource.string(yaml))).returnsNormally();
+      }
+
+      const falsePositive = '\n...false-positive';
+
+      ignoreFalsePositive('"$falsePositive"'); // doube-quoted
+      ignoreFalsePositive("'$falsePositive'"); // single-quoted
+      ignoreFalsePositive(falsePositive); // plain
+      ignoreFalsePositive('|\nliteral$falsePositive'); // literal
+      ignoreFalsePositive('>\nliteral$falsePositive'); // folded
+    });
   });
 
   group('Utility methods', () {
