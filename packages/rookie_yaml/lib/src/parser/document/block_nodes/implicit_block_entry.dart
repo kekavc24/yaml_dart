@@ -185,7 +185,7 @@ BlockInfo parseImplicitValue<Obj>(
       fixedInlineIndent: valueIndent,
       forceInlined: false,
       composeImplicitMap: hasIndent && composeBlockCollection,
-      canComposeMapIfMultiline: composeBlockCollection,
+      canComposeMapIfMultiline: true,
       structuralOffset: indicatorOffset,
     ),
     keyIndent: keyIndent,

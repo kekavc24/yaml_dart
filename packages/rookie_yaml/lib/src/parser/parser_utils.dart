@@ -406,7 +406,7 @@ BlockElementInfo _skipToBlockElementChar(
 
   if (compose) {
     return (indentOrSeparation: indent, composeMap: true);
-  } else if (inferBlockEvent(iterator) case BlockCollectionEvent()) {
+  } else if (inferBlockEvent(iterator) is BlockCollectionEvent) {
     throwWithRangedOffset(
       iterator,
       message:

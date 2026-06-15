@@ -141,6 +141,7 @@ _SequenceState _sequenceNodeOrMarker(
         fixedInlineIndent: inlineFixedIndent,
         forceInlined: false,
         composeImplicitMap: composeMap,
+        canComposeMapIfMultiline: true,
         structuralOffset: indicatorOffset,
       );
 

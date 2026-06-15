@@ -99,6 +99,7 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
       fixedInlineIndent: inlineFixedIndent,
       forceInlined: false,
       composeImplicitMap: composeMap,
+      canComposeMapIfMultiline: true,
       structuralOffset: explicitCharOffset,
     ),
     keyIndent: indent,
