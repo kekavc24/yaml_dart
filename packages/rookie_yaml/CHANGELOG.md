@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.0-pre.3
+
+This release improves how the parser handles various YAML grammar edge cases in block and flow collections. This change also includes a variety of regression tests for these edge cases.
+
+> PS: We hit.. 96.95% 🎉 .. after running the official YAML test suite. 🥳
+
+`fix`:
+  - Fixes how the parser handles indents when exiting a block collection`s parsing context.
+  - Tightens the grammar evaluations when handling `?`, `-` and `:` when inferring events.
+  - Tightens the comment grammar and requires whitespace before `#` indicator.
+  - Ensures a block map retains the structural offset of `-`, `:`, and `?` in its `NodeSpan`.
+  - Fixes an issue where tabs were treated as indent in certain block contexts.
+  - Strictly requires whitespace as separation when parsing compact block collections.
+  - Removes implicit key restrictions in flow maps which accepts generic flow nodes in its grammar.
+
 ## 0.7.0-pre.2
 
 `BREAKING`:

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-beta.6
+
+`BREAKING`:
+  - Ability to set a custom `toFormat` callback for `YamlMapping` has been removed.
+
+`feat`:
+  - The internal writer used by `YamlBuffer` can be swapped/reset to another writer target.
+
+`fix`:
+  - Fixes an bug where a `ScalarView` could reference itself which is impossible in YAML scalars.
+
 ## 0.1.0-beta.5
 
 `feat`:

@@ -1,6 +1,6 @@
 name: rookie_yaml
 description: A highly configurable parser and dumper for YAML (and optionally json).
-version: 0.7.0-pre.2
+version: 0.7.0-pre.3
 repository: https://github.com/kekavc24/yaml_dart/tree/main/packages/rookie_yaml
 topics:
   - yaml
