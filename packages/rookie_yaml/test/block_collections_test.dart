@@ -559,6 +559,12 @@ key:
       compactThrows('?\t? compact key');
       compactThrows('-\t? compact map');
       compactThrows('?\t- compact list');
+      compactThrows('-\tkey: value');
+      compactThrows('?\tkey: value');
+      compactThrows('''
+? okay: map
+:\terr: map
+''');
     });
 
     test('Tab separated value never degenerates to map', () {

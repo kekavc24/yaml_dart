@@ -143,12 +143,14 @@ BlockInfo parseExplicitBlockEntry<Obj>(
       start: marker,
       end: iterator.currentLineInfo.current,
     );
-  } else if (ignoreValueIfKey) {
+  } else if (ignoreValueIfKey || keyInfo.exitIndent == null) {
     state.onParseMapKey(key!.parsed());
     onExplicitEntry(key!, null);
     return keyInfo;
-  } else if (keyInfo.exitIndent != null) {
-    if (keyInfo.exitIndent! > entryIndent) {
+  } else {
+    final exitIndent = keyInfo.exitIndent!;
+
+    if (exitIndent > entryIndent) {
       final scanner = state.iterator;
       throwWithRangedOffset(
         scanner,
@@ -156,7 +158,7 @@ BlockInfo parseExplicitBlockEntry<Obj>(
         start: key!.nodeSpan.nodeEnd,
         end: state.iterator.currentLineInfo.current,
       );
-    } else if (keyInfo.exitIndent! < entryIndent) {
+    } else if (exitIndent < entryIndent) {
       state.onParseMapKey(key!.parsed());
       onExplicitEntry(key!, null);
       return keyInfo;
