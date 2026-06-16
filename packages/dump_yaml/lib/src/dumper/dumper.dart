@@ -37,7 +37,7 @@ final class YamlBuffer {
   YamlBuffer.toStream(StreamSink<String> stream) : this.ofWriter(stream.add);
 
   /// Actual Buffer.
-  final Writer _writer;
+  Writer _writer;
 
   /// Current indentation.
   int indent = 0;
@@ -62,6 +62,11 @@ extension DumperHelpers on YamlBuffer {
     indent = updated;
     lastWasLineEnding = false;
     distanceFromMargin = 0;
+  }
+
+  /// Updates the internal [writer] used by `this`.
+  set writer(Writer? writer) {
+    _writer = writer ?? _writer;
   }
 
   /// Moves the imaginary cursor to the next line by writing a [lineEnding].

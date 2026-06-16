@@ -96,7 +96,7 @@ final class YamlDumper extends Dumper<Object?> {
   ///
   /// If [config] is `null`, `Config.defaults()` is used.
   @override
-  void reset({Config? config}) {
+  void reset({Config? config, Writer? writer}) {
     final (:docConfig, :formatting, :styling) =
         (config ?? Config.defaults()).yamlConfig;
 
@@ -105,6 +105,7 @@ final class YamlDumper extends Dumper<Object?> {
 
     final (:rootIndent, :indentationStep, :lineEnding) = formatting.config;
     dumper.buffer
+      ..writer = writer
       ..reset = rootIndent
       ..step = indentationStep
       ..lineEnding = lineEnding;

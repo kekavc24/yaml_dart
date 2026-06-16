@@ -46,4 +46,26 @@ void main() {
     dumper.dump(mapSame);
     check(writer.join()).equals(mapSame.toString());
   });
+
+  test('Resets to any writer', () {
+    const obj = {
+      ['hello', 'world']: 'from',
+      {'year'}: 24,
+    };
+
+    final chunks = <String>[];
+    final other = StringBuffer();
+
+    final dumper = YamlDumper.toStringBuffer(
+      config: Config.defaults(),
+      buffer: other,
+    );
+
+    dumper
+      ..dump(obj)
+      ..reset(writer: chunks.add)
+      ..dump(obj);
+
+    check(chunks.join()).equals(other.toString());
+  });
 }
