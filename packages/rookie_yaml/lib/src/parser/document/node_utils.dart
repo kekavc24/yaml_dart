@@ -129,13 +129,16 @@ bool continueToNextEntry(
     onParseComment: onParseComment,
   );
 
-  lastEntrySpan.parsingEnd = iterator.currentLineInfo.current;
-
   if (iterator.current != flowEntryEnd) {
+    lastEntrySpan.parsingEnd = iterator.currentLineInfo.current;
     return false;
   }
 
   iterator.nextChar();
+
+  // Include flow indicator as part of the last entry.
+  lastEntrySpan.parsingEnd = iterator.currentLineInfo.current;
+
   final goToNext = nextSafeLineInFlow(
     iterator,
     minIndent: minIndent,

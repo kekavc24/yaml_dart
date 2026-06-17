@@ -2,7 +2,7 @@
 ///
 /// `lineIndex` - zero-based line index in the source string.<br>
 /// `columnIndex` - zero-based column index within a line.<br>
-/// `span` - number of bytes/UTF-8 code units in this offset.<br>
+/// `span` - number of UTF-? (8 OR 16) code units in this offset.<br>
 /// `offset` - zero-based index in the source. (after all the surrogates/code
 /// units have been combined).
 typedef RuneOffset = ({int lineIndex, int columnIndex, int span, int offset});
@@ -77,6 +77,22 @@ sealed class NodeSpan {
   /// Unlike [nodeEnd], this may represent the offset past any trailing comments
   /// and empty lines that are not considered part of the node's meaningful
   /// content by the parser.
+  ///
+  /// In flow entries, this points to the character after `,` or `}`
+  /// (when in map) or `]` (when in sequence).
+  ///
+  /// ```yaml
+  /// # The scalar "hello" ends at `]` (exclusive).
+  /// [hello]
+  /// ---
+  /// # This is valid yaml. Ends at `]` (exclusive).
+  /// [hello,]
+  /// ---
+  /// # Ends at `,` (inclusive). So this offset points at the space " ".
+  /// # The "," indicates the start of the next entry and acts as a marker for
+  /// # the previous entry.
+  /// [hello, next]
+  /// ```
   RuneOffset end();
 
   @override
