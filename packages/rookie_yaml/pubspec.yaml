@@ -36,4 +36,4 @@ dev_dependencies:
   yaml_test_suite_runner:
     git:
       url: https://github.com/kekavc24/yaml_test_suite_runner.git
-      ref: 4d5bf04904be073d5f8aecf40327086a784ba56c
+      ref: 61cdaf919eeda84937201db09ee4f748f159f847
