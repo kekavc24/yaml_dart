@@ -101,9 +101,7 @@ key2:
 # - block indicator as indent
 ''';
 
-      check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals(
+      check(bootstrapDocParser(yaml).nodeAsSimpleString()).equals(
         {
           null: null,
           'key': null,
@@ -114,6 +112,27 @@ key2:
         }.toString(),
       );
     });
+
+    test(
+      'Uses a block map\'s fast path when an alias follows an anchor for map',
+      () {
+        const yaml = '''
+&hello key: value
+next: &other
+    *hello : value
+
+*other : here
+''';
+
+        check(bootstrapDocParser(yaml).nodeAsSimpleString()).equals(
+          {
+            'key': 'value',
+            'next': {'key': 'value'},
+            {'key': 'value'}: 'here',
+          }.toString(),
+        );
+      },
+    );
 
     test('Throws if duplicate keys are found', () {
       void checkDuplicate(String yaml) {
@@ -623,9 +642,9 @@ key:
         check(
           () => loadObject(
             YamlSource.string('''
-key: 
+key:
   nested: value
- \ttab: key 
+ \ttab: key
 '''),
           ),
         ).throws();

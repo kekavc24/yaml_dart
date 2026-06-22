@@ -63,7 +63,8 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
             flowProperty: property,
           );
         }
-      case NodePropertyEvent():
+      case NodePropertyEvent propertyEvent
+          when propertyEvent != NodePropertyEvent.startAlias:
         {
           nodeInfo = parseBlockNode(
             state,
