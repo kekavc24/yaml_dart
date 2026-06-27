@@ -635,7 +635,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 }
 
 /// {@category rep_tree}
-extension GTags on TreeBuilder {
+extension InjectState on TreeBuilder {
   /// Adds the global [tags] if their handles are absent.
   void includeGlobalTags(Iterable<GlobalTag> tags) {
     if (_resetTags) _globalTags.clear();
@@ -655,4 +655,10 @@ extension GTags on TreeBuilder {
     _globalTags.clear();
     includeGlobalTags(tags);
   }
+
+  /// Adds any [anchors] not tracked by this builder.
+  ///
+  /// This method should only be called if you are sure at least one object
+  /// within the tree includes such an anchor in its properties.
+  void includeAnchors(Iterable<String> anchors) => _anchors.addAll(anchors);
 }

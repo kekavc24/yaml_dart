@@ -310,6 +310,17 @@ void main() {
           );
     });
 
+    test('Includes (invalid) anchors', () {
+      const ref = 'invalid-yaml';
+
+      check(
+        (treeBuilder
+              ..includeAnchors([ref])
+              ..buildFor(Alias(ref)))
+            .builtNode(),
+      ).isA<ReferenceNode>().whoseNode().equals('*$ref');
+    });
+
     test('Throws if no such anchor is present', () {
       check(() => treeBuilder.buildFor(Alias('24'))).throws();
       check(
