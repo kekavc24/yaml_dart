@@ -169,10 +169,8 @@ typedef ObjectFromView<To> = To Function(Object? object);
 /// {@category dump_list}
 /// {@category dump_map}
 abstract base class ConcreteNode<To> extends DumpableView {
-  ConcreteNode(this.node);
-
   /// Object that can be dumped as a node
-  Object? node;
+  Object? get node;
 
   @override
   String? get alias => null;

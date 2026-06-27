@@ -37,7 +37,7 @@ void main() {
             ..commentStyle = CommentStyle.trailing
             ..comments.addAll(_comments),
 
-          YamlMapping({})
+          DartMap({})
             ..nodeStyle = NodeStyle.flow
             ..commentStyle = CommentStyle.trailing
             ..comments.addAll(_comments),
@@ -162,7 +162,7 @@ void main() {
 ''');
 
     buffer.clear();
-    dumper.dump(YamlMapping(map)..nodeStyle = NodeStyle.flow);
+    dumper.dump(DartMap(map)..nodeStyle = NodeStyle.flow);
 
     check(buffer.toString()).equals('''
 {
@@ -194,7 +194,7 @@ void main() {
           ..nodeStyle = NodeStyle.flow
           ..forceInline = true,
 
-        YamlMapping({0: flowNodes})
+        DartMap({0: flowNodes})
           ..comments.addAll(_comments)
           ..commentStyle = CommentStyle.trailing
           ..nodeStyle = NodeStyle.flow

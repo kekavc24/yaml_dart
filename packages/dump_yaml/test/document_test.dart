@@ -55,7 +55,7 @@ void main() {
           VerbatimTag.fromTagShorthand(TagShorthand.primary('hello')),
         ),
 
-        YamlMapping('from')
+        CustomMap('from')
           ..forceInline = true
           ..withNodeTag(TagShorthand.primary('world')),
       ]);

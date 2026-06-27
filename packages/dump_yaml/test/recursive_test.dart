@@ -26,7 +26,7 @@ void main() {
 
   test('Detects and creates an alias for self-referential maps', () {
     final map = <String, Object>{'key': 'value'};
-    map['self'] = YamlMapping(map);
+    map['self'] = DartMap(map);
 
     // Block maps
     check(dumpAsYaml(map, config: Config.defaults())).equals('''
@@ -38,13 +38,13 @@ self: *recursive
 
   test("Detects and uses a view's anchor for self-referential objects", () {
     final map = <String, Object>{};
-    map['self'] = YamlMapping(map);
+    map['self'] = DartMap(map);
 
     final list = <Object?>['hello'];
 
     list
       ..add(list)
-      ..add(YamlMapping(map)..anchor = 'map');
+      ..add(DartMap(map)..anchor = 'map');
 
     map['iter'] = list;
 
@@ -93,7 +93,7 @@ self: *recursive
 
   test('ScalarView has no self reference', () {
     final view = ScalarView(24);
-    check((view..node = view).node).equals(24);
-    check((view..node = 0).node).equals(0);
+    check((view..scalar = view).node).equals(24);
+    check((view..scalar = 0).node).equals(0);
   });
 }

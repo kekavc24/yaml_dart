@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 
@@ -31,68 +29,22 @@ final class YamlIterable extends ConcreteNode<YamlIterableEntry> {
   /// will be called when the iterable is being dumped.
   ///
   /// This view inherits the [node]'s hashcode and equality implementation.
-  YamlIterable(super.node, {this.toFormat = iterable});
+  YamlIterable(this.node, {this.toFormat = iterable});
+
+  @override
+  Object? node;
 
   @override
   NodeStyle nodeStyle = NodeStyle.block;
 
   @override
   IterableToYaml toFormat;
-}
-
-/// A list of [MapEntry]s for a YAML map.
-///
-/// {@category dump_map}
-typedef YamlMappingEntry = Iterable<MapEntry<Object?, Object?>>;
-
-/// Maps a map to a yaml mapping.
-///
-/// {@category dump_map}
-typedef MapToYaml = ObjectFromView<YamlMappingEntry>;
-
-/// Obtains the entries of the [object]. If not a map, the [object] is treated
-/// as a key with a null value.
-YamlMappingEntry _mapping(Object? object) {
-  MapEntry<Object?, Object?> wrap(Object? toWrap) =>
-      toWrap is MapEntry ? toWrap : MapEntry(toWrap, null);
-
-  return switch (object) {
-    Map() => object.entries,
-    Iterable() => object.fold(
-      LinkedHashSet(
-        equals: (k1, k2) => yamlCollectionEquality.equals(k1.key, k2.key),
-        hashCode: (p0) => yamlCollectionEquality.hash(p0.key),
-      ),
-      (buff, next) {
-        (buff as LinkedHashSet).add(wrap(next));
-        return buff;
-      },
-    ),
-    _ => [wrap(object)],
-  };
-}
-
-/// A mutable view for a [Map]-like object that can have YAML node properties.
-/// Unlike [ScalarView] and [YamlIterable], its `toFormat` getter cannot be
-/// overriden due to the sensitive nature of yaml [Map]s.
-///
-/// {@category dumpable_view}
-/// {@category dump_map}
-final class YamlMapping extends ConcreteNode<YamlMappingEntry> {
-  /// Creates a [YamlMapping] wrapping a [node].
-  ///
-  /// If the [node] is not an [Map], the default [toFormat] creates a single
-  /// entry with a key and no value.  For a custom object, provide a [toFormat]
-  /// callback that will be called when the map is being dumped.
-  ///
-  /// This view inherits the [node]'s hashcode and equality implementation.
-  YamlMapping(super.node);
 
   @override
-  NodeStyle nodeStyle = NodeStyle.block;
+  bool operator ==(Object other) => yamlCollectionEquality.equals(node, other);
 
   @override
-  MapToYaml get toFormat => _mapping;
+  int get hashCode => yamlCollectionEquality.hash(node);
 }
 
 /// Maps any object to a scalar.
@@ -109,15 +61,19 @@ String string(Object? object) => object.toString();
 final class ScalarView extends ConcreteNode<String> {
   /// Creates a [ScalarView] wrapping a [node] that is always stringified. The
   /// view inherits the [node]'s hashcode and equality implementation.
-  ScalarView(super.node, {this.toFormat = string});
+  ScalarView(this._scalar, {this.toFormat = string});
+
+  Object? _scalar;
+
+  @override
+  Object? get node => _scalar;
 
   @override
   ScalarToString toFormat;
 
-  @override
-  set node(Object? value) {
+  set scalar(Object? value) {
     if (identical(value, this)) return;
-    super.node = value;
+    _scalar = value;
   }
 
   /// Scalar style associated with this view.
@@ -132,4 +88,110 @@ final class ScalarView extends ConcreteNode<String> {
 
   @override
   String toString() => toFormat(node);
+}
+
+/// A list of [MapEntry]s for a YAML map.
+///
+/// {@category dump_map}
+typedef YamlMappingEntry = Iterable<MapEntry<Object?, Object?>>;
+
+/// Maps a map to a yaml mapping.
+///
+/// {@category dump_map}
+typedef MapToYaml = ObjectFromView<YamlMappingEntry>;
+
+/// A mutable view for a [Map]-like object that can have YAML node properties.
+/// Unlike [ScalarView] and [YamlIterable], its `toFormat` getter cannot be
+/// overriden due to the sensitive nature of yaml [Map]s. See [DartMap] or
+/// [CustomMap].
+///
+/// {@category dumpable_view}
+/// {@category dump_map}
+sealed class YamlMapping<T> extends ConcreteNode<YamlMappingEntry> {
+  /// Creates a [YamlMapping] wrapping a [node].
+  ///
+  /// If the [node] is not an [Map], the default [toFormat] creates a single
+  /// entry with a key and no value.  For a custom object, provide a [toFormat]
+  /// callback that will be called when the map is being dumped.
+  ///
+  /// This view inherits the [node]'s hashcode and equality implementation.
+  YamlMapping(this.node);
+
+  @override
+  covariant T node;
+
+  @override
+  NodeStyle nodeStyle = NodeStyle.block;
+
+  @override
+  MapToYaml get toFormat;
+}
+
+/// A wrapper for built-in `Dart` [Map]s.
+///
+/// {@category dumpable_view}
+/// {@category dump_map}
+final class DartMap extends YamlMapping<Map<Object?, Object?>> {
+  DartMap(super.node) : hashCode = yamlCollectionEquality.hash(node);
+
+  @override
+  set node(Map<Object?, Object?> map) {
+    node = map;
+    hashCode = yamlCollectionEquality.hash(map);
+  }
+
+  @override
+  MapToYaml get toFormat =>
+      (e) => (e as Map).entries;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Map && yamlCollectionEquality.equals(other, node);
+
+  @override
+  int hashCode;
+}
+
+/// Helper that returns the keys of an object.
+///
+/// {@category dump_map}
+typedef GetKeys = Iterable<Object?> Function(Object? object);
+
+/// Helper that reads the value of a key from a `map-like` object.
+///
+/// {@category dump_map}
+typedef GetValue =
+    Object? Function(Object? map, ({Object? key, int index}) current);
+
+/// Lazily extracts the entries of an object [v] using predefined [getKeys] and
+/// [readValue] helpers.
+YamlMappingEntry _lazy(Object? v, GetKeys getKeys, GetValue readValue) sync* {
+  var index = 0;
+
+  for (final key in getKeys(v)) {
+    final e = MapEntry(key, readValue(v, (key: key, index: index)));
+    yield e;
+    ++index;
+  }
+}
+
+/// A [YamlMapping] wrapper that allows you to wrap an object and provide
+/// a custom [GetKeys] callback for extracting keys and a [GetValue] callback
+/// for extracting the value associated with each key.
+///
+/// {@category dumpable_view}
+/// {@category dump_map}
+final class CustomMap extends YamlMapping<Object?> {
+  CustomMap(super.node);
+
+  /// Obtains the keys from a custom [node]. Duplicate keys will not have their
+  /// entries visited by the `TreeBuilder`.
+  GetKeys getKeys = (o) => [o];
+
+  /// Obtains the values from the [node] via its keys.
+  GetValue readValue = (_, _) => null;
+
+  @override
+  MapToYaml get toFormat =>
+      (o) => _lazy(o, getKeys, readValue);
 }

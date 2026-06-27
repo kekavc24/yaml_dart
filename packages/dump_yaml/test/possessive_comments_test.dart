@@ -39,8 +39,8 @@ void main() {
             YamlIterable([])
               ..nodeStyle = NodeStyle.flow
               ..comments.addAll(_comments),
-            YamlMapping({'block': 'map'})..comments.addAll(_comments),
-            YamlMapping({})
+            DartMap({'block': 'map'})..comments.addAll(_comments),
+            DartMap({})
               ..nodeStyle = NodeStyle.flow
               ..comments.addAll(_comments),
           ]),
@@ -84,7 +84,7 @@ void main() {
     final key = ScalarView(24)..comments.addAll(_comments);
     final map = {key: 'value'};
 
-    dumper.dump([map, YamlMapping(map)..nodeStyle = NodeStyle.flow]);
+    dumper.dump([map, DartMap(map)..nodeStyle = NodeStyle.flow]);
 
     check(buffer.toString()).equals('''
 - ? # possessive

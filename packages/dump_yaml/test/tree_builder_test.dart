@@ -88,7 +88,7 @@ void main() {
     });
 
     test('Returns a collection view for a map', () {
-      treeBuilder.buildFor(YamlMapping(['converted to key']));
+      treeBuilder.buildFor(CustomMap(['converted to key']));
 
       check(treeBuilder.builtNode()).isA<CollectionNode<MappingEntry>>()
         ..hasStyle(NodeStyle.block)
@@ -108,14 +108,19 @@ void main() {
 
     test('Removes duplicates from a custom YamlMapping', () {
       treeBuilder.buildFor(
-        YamlMapping([
-          ('sneaky', 'entry'),
-          ('sneaky', 'entry'),
-          MapEntry(['key'], null),
-          ['key'],
-          {'key': 'value'},
-          {'key': 'value'},
-        ]),
+        CustomMap([
+            ('sneaky', 'entry'),
+            ('sneaky', 'entry'),
+            MapEntry(['key'], null),
+            ['key'],
+            {'key': 'value'},
+            {'key': 'value'},
+          ])
+          ..getKeys = ((obj) =>
+              (obj as Iterable).map((e) => e is MapEntry ? e.key : e))
+          ..readValue = (map, current) => current.index == 2
+              ? ((map as List)[2] as MapEntry).value
+              : current.key,
       );
 
       check(
@@ -133,7 +138,7 @@ void main() {
       ).throws();
 
       check(
-        () => treeBuilder.buildFor(YamlMapping([])..withNodeTag(sequenceTag)),
+        () => treeBuilder.buildFor(CustomMap([])..withNodeTag(sequenceTag)),
       ).throws();
     });
   });
@@ -143,7 +148,7 @@ void main() {
       test('Block style allows all styles', () {
         treeBuilder.buildFor([
           'scalar',
-          YamlMapping('key')..nodeStyle = NodeStyle.flow,
+          CustomMap('key')..nodeStyle = NodeStyle.flow,
         ], config: TreeConfig.block());
 
         check(treeBuilder.builtNode()).isA<ListNode>().whoseNode().any(
@@ -228,7 +233,7 @@ void main() {
         treeBuilder.buildFor([
           ScalarView('hello')..withNodeTag(spoof),
           YamlIterable('world')..withNodeTag(spoof),
-          YamlMapping('custom')..withNodeTag(spoof),
+          CustomMap('custom')..withNodeTag(spoof),
         ]);
 
         check(

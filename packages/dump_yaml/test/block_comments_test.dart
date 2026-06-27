@@ -231,7 +231,7 @@ void main() {
                     ..commentStyle = CommentStyle.block
                     ..comments.addAll(_comments),
 
-                  YamlMapping({})
+                  DartMap({})
                     ..commentStyle = CommentStyle.block
                     ..comments.addAll(_comments),
                 ])

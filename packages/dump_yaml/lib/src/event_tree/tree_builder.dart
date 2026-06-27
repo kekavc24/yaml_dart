@@ -474,6 +474,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     iterate: (index, element) {
       _pushPath(index.toString());
       visitObject(element);
+      return true;
     },
     compose: () {
       // One in, one out
@@ -500,29 +501,43 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     String? anchor,
     String? localTag,
     CommentStyle? commentStyle,
-  }) => _buildCollection(
-    iterable,
-    style: style,
-    nodeType: NodeType.map,
-    iterate: (_, element) {
-      visitObject(element.key);
-      visitObject(element.value);
-    },
-    compose: () {
-      // Two in, two out
-      final value = _nodes.removeLast();
-      final key = _nodes.removeLast();
-      _popPaths(2);
-      return (key.isMultiline || value.isMultiline, (key, value));
-    },
-    forceInline: forceInline,
-    comments: comments,
-    commentStyle: commentStyle,
-    anchor: anchor,
-    recursiveAnchor: recursiveAnchor,
-    localTag: localTag,
-    type: NodeType.map,
-  );
+  }) {
+    final keysSeen = HashSet<Object?>(
+      equals: yamlCollectionEquality.equals,
+      hashCode: yamlCollectionEquality.hash,
+    );
+
+    _buildCollection(
+      iterable,
+      style: style,
+      nodeType: NodeType.map,
+      iterate: (_, element) {
+        final key = element.key;
+
+        if (!keysSeen.add(key)) {
+          return false;
+        }
+
+        visitObject(key);
+        visitObject(element.value);
+        return true;
+      },
+      compose: () {
+        // Two in, two out
+        final value = _nodes.removeLast();
+        final key = _nodes.removeLast();
+        _popPaths(2);
+        return (key.isMultiline || value.isMultiline, (key, value));
+      },
+      forceInline: forceInline,
+      comments: comments,
+      commentStyle: commentStyle,
+      anchor: anchor,
+      recursiveAnchor: recursiveAnchor,
+      localTag: localTag,
+      type: NodeType.map,
+    );
+  }
 
   /// Builds a collection using its entries in the current [iterable]. [iterate]
   /// and [compose] is called on every element.
@@ -530,7 +545,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     Iterable<E> iterable, {
     required NodeStyle style,
     required NodeType nodeType,
-    required void Function(int index, E element) iterate,
+    required bool Function(int index, E element) iterate,
     required (bool isMultiline, T value) Function() compose,
     required bool forceInline,
     required List<String>? comments,
@@ -562,7 +577,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     final queue = ListQueue<T>();
 
     for (final (index, element) in iterable.indexed) {
-      iterate(index, element);
+      if (!iterate(index, element)) continue;
       final (isMultiline, node) = compose();
       update(isMultiline, node);
       queue.addLast(node);
