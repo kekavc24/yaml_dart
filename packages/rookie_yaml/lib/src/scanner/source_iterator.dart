@@ -31,8 +31,15 @@ int getLineCount(RuneOffset start, RuneOffset end) =>
 RuneOffset _getLineStart({
   int lineIndex = 0,
   int span = 0,
+  int rawOffset = 0,
   int currentOffset = 0,
-}) => (lineIndex: lineIndex, columnIndex: 0, span: 0, offset: currentOffset);
+}) => (
+  lineIndex: lineIndex,
+  columnIndex: 0,
+  span: 0,
+  rawOffset: rawOffset + span,
+  offset: currentOffset,
+);
 
 /// Represents the active line's span information. This is intentionally
 /// different from [RuneSpan] because we prefer to iterate the source string
@@ -196,6 +203,9 @@ final class UnicodeIterator extends SourceIterator {
   /// Index of the UTF-8/UTF-16 unicode character in a string.
   int _graphemeIndex = 0;
 
+  /// True offset within the source.
+  int _rawOffset = 0;
+
   /// Index of the current line
   int _lineIndex = 0;
 
@@ -236,6 +246,7 @@ final class UnicodeIterator extends SourceIterator {
       lineIndex: _lineIndex,
       columnIndex: _columnIndex,
       span: _currentCharSpan,
+      rawOffset: _rawOffset,
       offset: _graphemeIndex,
     ),
   );
@@ -251,7 +262,8 @@ final class UnicodeIterator extends SourceIterator {
     // forward this combination.
     if (_currentChar == carriageReturn && _nextChar.unicode == lineFeed) {
       _moveNext();
-      _graphemeIndex += _nextChar.span;
+      ++_rawOffset;
+      ++_graphemeIndex;
       ++_columnIndex;
     }
   }
@@ -310,7 +322,8 @@ final class UnicodeIterator extends SourceIterator {
     super.nextChar();
 
     final charSpan = max(1, _currentCharSpan);
-    _graphemeIndex += charSpan; // EOF included.
+    _rawOffset += charSpan;
+    ++_graphemeIndex; // EOF included.
 
     // Update line index.
     if (isNewLine) {
@@ -318,6 +331,7 @@ final class UnicodeIterator extends SourceIterator {
       _lineStartOffset = _getLineStart(
         lineIndex: _lineIndex,
         span: _currentCharSpan,
+        rawOffset: _rawOffset,
         currentOffset: _graphemeIndex,
       );
     } else {

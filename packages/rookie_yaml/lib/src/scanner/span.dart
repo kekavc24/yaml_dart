@@ -3,9 +3,20 @@
 /// `lineIndex` - zero-based line index in the source string.<br>
 /// `columnIndex` - zero-based column index within a line.<br>
 /// `span` - number of UTF-? (8 OR 16) code units in this offset.<br>
-/// `offset` - zero-based index in the source. (after all the surrogates/code
-/// units have been combined).
-typedef RuneOffset = ({int lineIndex, int columnIndex, int span, int offset});
+/// `rawOffset` - zero-based offset within the actual source.<br>
+/// `offset` - zero-based index in the source being read. (after all the
+/// surrogates/code units have been combined).
+///
+/// Use `rawOffset` if you need to work with the actual source. Use `offset` if
+/// you need to perform operations on complete unicode code unit chunks such
+/// as UTF-16 strings.
+typedef RuneOffset = ({
+  int lineIndex,
+  int columnIndex,
+  int span,
+  int rawOffset,
+  int offset,
+});
 
 /// Range offset within a YAML input.
 typedef RuneSpan = ({RuneOffset start, RuneOffset end});

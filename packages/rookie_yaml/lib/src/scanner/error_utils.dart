@@ -353,6 +353,7 @@ Never throwWithApproximateRange(
     start: (
       lineIndex: iterIndex + 1,
       columnIndex: actualColumn,
+      rawOffset: -1, // cannot be determined here
       offset: lines.first.startOffset + actualColumn,
       span: 0, // Unknown with approximation.
     ),
