@@ -204,7 +204,7 @@ ParsedScalarInfo? plainParser(
           foundLineBreak = foundLineBreak || hasLineBreak;
         }
 
-      case _ when (isImplicit || isInFlowContext) && char.isFlowDelimiter():
+      case _ when isInFlowContext && char.isFlowDelimiter():
         break chunker;
 
       default:
