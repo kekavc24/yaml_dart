@@ -132,24 +132,11 @@ sealed class YamlMapping<T> extends ConcreteNode<YamlMappingEntry> {
 /// {@category dumpable_view}
 /// {@category dump_map}
 final class DartMap extends YamlMapping<Map<Object?, Object?>> {
-  DartMap(super.node) : hashCode = yamlCollectionEquality.hash(node);
-
-  @override
-  set node(Map<Object?, Object?> map) {
-    node = map;
-    hashCode = yamlCollectionEquality.hash(map);
-  }
+  DartMap(super.node);
 
   @override
   MapToYaml get toFormat =>
       (e) => (e as Map).entries;
-
-  @override
-  bool operator ==(Object other) =>
-      other is Map && yamlCollectionEquality.equals(other, node);
-
-  @override
-  int hashCode;
 }
 
 /// Helper that returns the keys of an object.
@@ -169,8 +156,7 @@ YamlMappingEntry _lazy(Object? v, GetKeys getKeys, GetValue readValue) sync* {
   var index = 0;
 
   for (final key in getKeys(v)) {
-    final e = MapEntry(key, readValue(v, (key: key, index: index)));
-    yield e;
+    yield MapEntry(key, readValue(v, (key: key, index: index)));
     ++index;
   }
 }

@@ -13,6 +13,19 @@ extension on String {
       isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
 }
 
+bool _genericEquals(Object? thiz, Object? that) {
+  if ((thiz is Map && that is Map) || (thiz is List && that is List)) {
+    return yamlCollectionEquality.equals(thiz, that);
+  }
+
+  return thiz == that;
+}
+
+Object? _unwrapCollections(Object? object) => switch (object) {
+  YamlMapping() || YamlIterable() => (object as ConcreteNode).node,
+  _ => object,
+};
+
 mixin _Decomposer {
   /// Anchors in the document.
   final _anchors = <String>{};
@@ -503,9 +516,12 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     CommentStyle? commentStyle,
   }) {
     final keysSeen = HashSet<Object?>(
-      equals: yamlCollectionEquality.equals,
+      equals: _genericEquals,
       hashCode: yamlCollectionEquality.hash,
     );
+
+    // DartMap is just a helpful wrapper for a map.
+    bool pushKey(Object? key) => keysSeen.add(_unwrapCollections(key));
 
     _buildCollection(
       iterable,
@@ -514,7 +530,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       iterate: (_, element) {
         final key = element.key;
 
-        if (!keysSeen.add(key)) {
+        if (!pushKey(key)) {
           return false;
         }
 

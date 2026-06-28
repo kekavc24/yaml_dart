@@ -7,22 +7,7 @@ import 'package:dump_yaml/src/views/views.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:test/test.dart';
 
-extension _Typed<T> on Subject<TreeNode<T>> {
-  Subject<T> whoseNode() => has<T>((e) => e.node, 'Node');
-
-  void hasTag(String? tag) => has((e) => e.localTag, 'Tag').equals(tag);
-
-  void hasAnchor(String? anchor) =>
-      has((e) => e.anchor, 'Anchor').equals(anchor);
-
-  void hasStyle(NodeStyle style) =>
-      has((e) => e.nodeStyle, 'Style').equals(style);
-
-  void isNodeType(NodeType type) =>
-      has((e) => e.nodeType, 'Node Type').equals(type);
-
-  Subject<bool> multiline() => has((e) => e.isMultiline, 'Multiline');
-}
+import 'helpers/tree_node.dart';
 
 void main() {
   late final TreeBuilder treeBuilder;
@@ -71,75 +56,6 @@ void main() {
             ..has((k) => k.$1, 'Key').isA<ContentNode>()
             ..has((k) => k.$2, 'Value').isA<ListNode>(),
         );
-    });
-  });
-
-  group('Views', () {
-    test('Returns a content node for a scalar view', () {
-      treeBuilder.buildFor(
-        ScalarView({'ignores, type'})
-          ..withNodeTag(stringTag)
-          ..anchor = 'scalar',
-      );
-
-      check(treeBuilder.builtNode()).isA<ContentNode>()
-        ..hasTag(stringTag.toString())
-        ..hasAnchor('scalar');
-    });
-
-    test('Returns a collection view for a map', () {
-      treeBuilder.buildFor(CustomMap(['converted to key']));
-
-      check(treeBuilder.builtNode()).isA<CollectionNode<MappingEntry>>()
-        ..hasStyle(NodeStyle.block)
-        ..hasTag(null)
-        ..hasAnchor(null);
-    });
-
-    test('Returns a collection view for an iterable', () {
-      treeBuilder.buildFor(YamlIterable('converted to iterable'));
-
-      check(treeBuilder.builtNode()).isA<CollectionNode>()
-        ..whoseNode().any((e) => e.isA<ContentNode>())
-        ..hasStyle(NodeStyle.block)
-        ..hasAnchor(null)
-        ..hasTag(null);
-    });
-
-    test('Removes duplicates from a custom YamlMapping', () {
-      treeBuilder.buildFor(
-        CustomMap([
-            ('sneaky', 'entry'),
-            ('sneaky', 'entry'),
-            MapEntry(['key'], null),
-            ['key'],
-            {'key': 'value'},
-            {'key': 'value'},
-          ])
-          ..getKeys = ((obj) =>
-              (obj as Iterable).map((e) => e is MapEntry ? e.key : e))
-          ..readValue = (map, current) => current.index == 2
-              ? ((map as List)[2] as MapEntry).value
-              : current.key,
-      );
-
-      check(
-        treeBuilder.builtNode(),
-      ).isA<MapNode>().whoseNode().length.equals(3);
-    });
-
-    test('Throws if tags are mismatched', () {
-      check(
-        () => treeBuilder.buildFor(ScalarView('')..withNodeTag(mappingTag)),
-      ).throws();
-
-      check(
-        () => treeBuilder.buildFor(YamlIterable('')..withNodeTag(stringTag)),
-      ).throws();
-
-      check(
-        () => treeBuilder.buildFor(CustomMap([])..withNodeTag(sequenceTag)),
-      ).throws();
     });
   });
 
