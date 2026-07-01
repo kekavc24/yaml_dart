@@ -40,9 +40,12 @@ targets:
       checkInput(YamlSource.string(yaml));
       checkInput(YamlSource.strictUtf8(utf8.encode(yaml)));
       checkInput(YamlSource.fixedUtf16(Uint16List.fromList(yaml.codeUnits)));
+      checkInput(YamlSource.strictUtf16Iterator(yaml.codeUnits.iterator));
       checkInput(
         YamlSource.fixedUtf32(Uint32List.fromList(yaml.runes.toList())),
       );
+
+      checkInput(YamlSource.fixedUtf32Iterator(yaml.runes.iterator));
     });
 
     test('Input with U+FEFF BOM', () {

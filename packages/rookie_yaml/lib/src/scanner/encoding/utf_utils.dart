@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'dart:typed_data';
-
 /// Byte range for a UTF-8 byte sequence. (start and end inclusive)
 typedef _MinMax = (int, int);
 
@@ -36,33 +33,31 @@ _MinMax _unicodeSecondByteRange(int firstByte) => switch (firstByte) {
 
 /// Decodes a UTF-8 byte [source] and allows no malformed byte sequences. This
 /// implementaton is based on The Unicode Standard, Version 17.0.
-Iterable<Unicode> decodeUtf8Strict(Uint8List source) sync* {
-  final byteCount = source.length;
-  if (byteCount == 0) return;
+Iterable<Unicode> decodeUtf8Strict(Iterator<int> source) sync* {
+  var canRead = source.moveNext();
+  if (!canRead) return;
 
   const boundary = 7;
-
   var offset = 0;
-  var canRead = true;
 
   /// Moves the cursor forward and returns whether more characters can be read.
   bool move() {
-    ++offset;
-    canRead = offset < byteCount;
-    return canRead;
+    if (canRead) {
+      ++offset;
+      return canRead = source.moveNext();
+    }
+
+    return false;
   }
 
   /// Reads the next byte if possible. Otherwise, throws.
   int takeNext(int count, int remaining) {
-    if (move()) return source[offset];
+    if (move()) return source.current;
 
     throw StateError(
       'Missing bytes in the byte sequence.\n'
       '\tCurrent offset: $offset\n'
-      '\tBytes read: ${source.skip(
-        max(0, offset - (count - remaining) - 1),
-      ).map((e) => e.readableHex())}\n'
-      '\tRemaining bytes: $remaining',
+      '\tRemaining unread bytes: $remaining',
     );
   }
 
@@ -118,7 +113,7 @@ Iterable<Unicode> decodeUtf8Strict(Uint8List source) sync* {
   }
 
   do {
-    final byte = source[offset];
+    final byte = source.current;
 
     // ASCII character.
     if (byte.bitLength <= boundary) {
@@ -139,20 +134,7 @@ Iterable<Unicode> decodeUtf8Strict(Uint8List source) sync* {
 /// Allowed surrogate range.
 const _surrogateRange = (0xD800, 0xDFFF);
 
-/// Converts the [input] based on the BOM (byte order mark).
-@pragma('vm:prefer-inline')
-Iterable<int> _checkBOM(
-  Iterable<int> input, {
-  required int Function(int value) converter,
-}) => input.elementAtOrNull(0) == 0xFFFE ? input.map(converter) : input;
-
-/// Decodes a UTF-16 byte [source] after checking if a BOM is present.
-Iterable<Unicode> decodeUtf16(Iterable<int> source) => _decodeUtf16Strict(
-  _checkBOM(
-    source,
-    converter: (codeUnit) => (((0x00FF & codeUnit) << 8) | (codeUnit >> 8)),
-  ),
-);
+typedef _Converter = int Function(int value);
 
 /// Decodes a UTF-16 [source]. This implementaton is based on The Unicode
 /// Standard, Version 17.0.
@@ -163,21 +145,20 @@ Iterable<Unicode> decodeUtf16(Iterable<int> source) => _decodeUtf16Strict(
 ///
 /// In all other cases, the code units must be in the range of 0x00 - 0xFFFF
 /// (inclusive on both ends).
-Iterable<Unicode> _decodeUtf16Strict(Iterable<int> source) sync* {
-  final iterator = source.iterator;
-
+@pragma('vm:prefer-inline')
+Iterable<Unicode> _decodeUtf16Strict(Iterator<int> source) sync* {
   /// Checks if a code unit is a trailing surrogate pair.
   bool isTrailingSurrogate(int codeUnit) => (codeUnit & 0xFC00) == 0xDC00;
 
   /// Reads the surrogate pairs.
   int readSurrogatePair(int high) {
-    if (!iterator.moveNext()) {
+    if (!source.moveNext()) {
       throw StateError(
         'Missing trailing low-surrogate code unit after ${high.readableHex()}.',
       );
     }
 
-    final low = iterator.current;
+    final low = source.current;
 
     if (isTrailingSurrogate(high) || !isTrailingSurrogate(low)) {
       throw StateError(
@@ -190,8 +171,8 @@ Iterable<Unicode> _decodeUtf16Strict(Iterable<int> source) sync* {
     return 0x10000 + ((high & 0x3FF) << 10) + (low & 0x3FF);
   }
 
-  while (iterator.moveNext()) {
-    final codeUnit = iterator.current;
+  while (source.moveNext()) {
+    final codeUnit = source.current;
 
     if (_surrogateRange.hasValue(codeUnit)) {
       yield (span: 2, unicode: readSurrogatePair(codeUnit));
@@ -206,27 +187,18 @@ Iterable<Unicode> _decodeUtf16Strict(Iterable<int> source) sync* {
   }
 }
 
-/// Decodes a 32-bit [source] as UTF-32 after checking if a BOM is present.
-Iterable<int> decodeUtf32(Uint32List source) => _decodeUtf32Strict(
-  _checkBOM(
-    source,
-    converter: (codeUnit) =>
-        ((0xFF & codeUnit) << 24) |
-        ((0xFF00 & codeUnit) << 8) |
-        ((codeUnit >> 8) & 0xFF00) |
-        (codeUnit >> 24),
-  ),
-);
-
 /// Decodes a UTF-32 [source]. This implementaton is based on The Unicode
 /// Standard, Version 17.0.
 ///
 /// Any surrogate code units are considered ill-formed. In all other cases,
 /// the code units must be in the range of 0x00 - 0x10FFFF.
-Iterable<int> _decodeUtf32Strict(Iterable<int> source) sync* {
+@pragma('vm:prefer-inline')
+Iterable<int> _decodeUtf32Strict(Iterator<int> source) sync* {
   bool notInRange(int value) => value < 0 || value > 0x10FFFF;
 
-  for (final codeUnit in source) {
+  while (source.moveNext()) {
+    final codeUnit = source.current;
+
     if (notInRange(codeUnit)) {
       throw StateError(
         'Invalid code unit "${codeUnit.readableHex()}" not in range of '
@@ -241,6 +213,43 @@ Iterable<int> _decodeUtf32Strict(Iterable<int> source) sync* {
 
     yield codeUnit;
   }
+}
+
+typedef _WideDecoder = Iterator<Unicode> Function(Iterator<int> source);
+
+/// Converts the endianess of a `UTF-16` code unit.
+@pragma('vm:prefer-inline')
+int _utf16Converter(int codeUnit) =>
+    (((0x00FF & codeUnit) << 8) | (codeUnit >> 8));
+
+/// Converts the endianess of a `UTF-32` code unit.
+@pragma('vm:prefer-inline')
+int _utf32Converter(int codeUnit) =>
+    ((0xFF & codeUnit) << 24) |
+    ((0xFF00 & codeUnit) << 8) |
+    ((codeUnit >> 8) & 0xFF00) |
+    (codeUnit >> 24);
+
+/// Helper function for obtaining the [_Converter] and [_WideDecoder] for
+/// `UTF-16` if [isUtf16] is `true`. Otherwise, defaults to `UTF-32`.
+@pragma('vm:prefer-inline')
+(_Converter, _WideDecoder) _wideUtfHelper(bool isUtf16) => isUtf16
+    ? (_utf16Converter, (i) => _decodeUtf16Strict(i).iterator)
+    : (
+        _utf32Converter,
+        ((i) => SpannedIterator.fixed(1, _decodeUtf32Strict(i).iterator)),
+      );
+
+/// Decodes a `UTF-16` or `UTF-32` [input] whose source is an [Iterator].
+Iterator<Unicode> iteratorDecodeUtfMin16(
+  Iterator<int> input, {
+  required bool isUtf16,
+}) {
+  if (!input.moveNext()) return Iterable<Unicode>.empty().iterator;
+  final (converter, decoder) = _wideUtfHelper(isUtf16);
+  final peeked = input.current;
+  final source = [peeked].followedBy(Iterable.withIterator(() => input));
+  return decoder((peeked == 0xFFFE ? source.map(converter) : source).iterator);
 }
 
 /// Empty stub.
