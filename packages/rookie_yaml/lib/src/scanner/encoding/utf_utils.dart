@@ -219,12 +219,12 @@ typedef _WideDecoder = Iterator<Unicode> Function(Iterator<int> source);
 
 /// Converts the endianess of a `UTF-16` code unit.
 @pragma('vm:prefer-inline')
-int _utf16Converter(int codeUnit) =>
+int utf16Converter(int codeUnit) =>
     (((0x00FF & codeUnit) << 8) | (codeUnit >> 8));
 
 /// Converts the endianess of a `UTF-32` code unit.
 @pragma('vm:prefer-inline')
-int _utf32Converter(int codeUnit) =>
+int utf32Converter(int codeUnit) =>
     ((0xFF & codeUnit) << 24) |
     ((0xFF00 & codeUnit) << 8) |
     ((codeUnit >> 8) & 0xFF00) |
@@ -234,9 +234,9 @@ int _utf32Converter(int codeUnit) =>
 /// `UTF-16` if [isUtf16] is `true`. Otherwise, defaults to `UTF-32`.
 @pragma('vm:prefer-inline')
 (_Converter, _WideDecoder) _wideUtfHelper(bool isUtf16) => isUtf16
-    ? (_utf16Converter, (i) => _decodeUtf16Strict(i).iterator)
+    ? (utf16Converter, (i) => _decodeUtf16Strict(i).iterator)
     : (
-        _utf32Converter,
+        utf32Converter,
         ((i) => SpannedIterator.fixed(1, _decodeUtf32Strict(i).iterator)),
       );
 
@@ -248,8 +248,11 @@ Iterator<Unicode> iteratorDecodeUtfMin16(
   if (!input.moveNext()) return Iterable<Unicode>.empty().iterator;
   final (converter, decoder) = _wideUtfHelper(isUtf16);
   final peeked = input.current;
-  final source = [peeked].followedBy(Iterable.withIterator(() => input));
-  return decoder((peeked == 0xFFFE ? source.map(converter) : source).iterator);
+  final unread = Iterable.withIterator(() => input);
+  return decoder(
+    (peeked == 0xFFFE ? unread.map(converter) : [peeked].followedBy(unread))
+        .iterator,
+  );
 }
 
 /// Empty stub.

@@ -60,11 +60,21 @@ targets:
     });
 
     test('Converts to code unit\'s endianess when U+FFFE BOM is present', () {
-      const withBOM = '\uFFFE Hello world';
+      const out = 'Hello world 👋🏾';
+      const bom = 0xFFFE;
 
-      check(
-        loadObject(YamlSource.strictUtf16(withBOM.codeUnits)),
-      ).not((o) => o.equals(withBOM));
+      void twiddles(YamlSource source) => check(loadObject(source)).equals(out);
+
+      twiddles(
+        YamlSource.strictUtf16(
+          [bom].followedBy(out.codeUnits.map(utf16Converter)),
+        ),
+      );
+      twiddles(
+        YamlSource.fixedUtf32(
+          [bom].followedBy(out.runes.map(utf32Converter)),
+        ),
+      );
     });
   });
 
