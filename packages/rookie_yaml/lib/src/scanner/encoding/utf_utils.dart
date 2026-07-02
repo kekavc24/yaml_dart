@@ -281,6 +281,15 @@ final class SpannedIterator<Iter extends Iterator<int>>
   /// Underlying iterator with code units.
   final Iter iterator;
 
+  /// Creates a [SpannedIterator] using the [yaml] string's [RuneIterator].
+  factory SpannedIterator.ofString(String yaml) {
+    return SpannedIterator.iterator(
+          yaml.runes.iterator,
+          spanned: (iterator) => iterator.currentSize,
+        )
+        as SpannedIterator<Iter>;
+  }
+
   /// Current code unit with its span information.
   Unicode? _current;
 
@@ -298,10 +307,3 @@ final class SpannedIterator<Iter extends Iterator<int>>
     return true;
   }
 }
-
-/// Creates a [SpannedIterator] using the [string]'s [RuneIterator].
-SpannedIterator<RuneIterator> unicodeFromString(String string) =>
-    SpannedIterator.iterator(
-      string.runes.iterator,
-      spanned: (iterator) => iterator.currentSize,
-    );

@@ -176,7 +176,8 @@ final class UnicodeIterator extends SourceIterator {
 
   /// Creates a [UnicodeIterator] that uses the underlying code units to iterate
   /// the string [source].
-  UnicodeIterator.ofString(String source) : this._(unicodeFromString(source));
+  UnicodeIterator.ofString(String source)
+    : this._(SpannedIterator.ofString(source));
 
   /// Creates a [UnicodeIterator] that iterates a sequence of utf bytes.
   UnicodeIterator.ofUnicode(Iterator<Unicode> source) : this._(source);

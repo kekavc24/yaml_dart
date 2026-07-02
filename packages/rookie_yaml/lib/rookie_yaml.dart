@@ -1,5 +1,7 @@
 library;
 
+export 'package:logging/logging.dart' show hierarchicalLoggingEnabled;
+
 export 'src/loaders/loader.dart';
 export 'src/parser/custom_resolvers.dart';
 export 'src/parser/delegates/object_delegate.dart'

@@ -17,7 +17,7 @@ part 'dart_objects.dart';
 extension type YamlSource._(Iterator<Unicode> source)
     implements Iterator<Unicode> {
   /// Creates a simple input from a [yaml] string.
-  YamlSource.simpleString(String yaml) : this._(unicodeFromString(yaml));
+  YamlSource.simpleString(String yaml) : this._(SpannedIterator.ofString(yaml));
 
   /// Creates an input from a [yaml] source string that does not allow unpaired
   /// surrogate code units.
