@@ -91,8 +91,16 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
       ? (null, keyOrMapProperty)
       : (keyOrMapProperty, null);
 
+  final map = state.defaultMapDelegate(
+    mapStyle: NodeStyle.block,
+    indentLevel: keyOrNode.indentLevel,
+    indent: composedMapIndent,
+    keySpan: keyOrNode.nodeSpan,
+  );
+
   return composeAndParseBlockMap(
     state,
+    map: map,
     key: state.trackAnchor(keyOrNode, keyProp),
     mapProperty: mapProp,
     fixedMapIndent: composedMapIndent,
@@ -107,21 +115,12 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
 /// first [key]'s value has been parsed.
 BlockNode<Obj> composeAndParseBlockMap<Obj>(
   ParserState<Obj> state, {
+  required MapLikeDelegate<Obj, Obj, Obj> map,
   required NodeDelegate<Obj> key,
   required ParsedProperty? mapProperty,
   required int fixedMapIndent,
 }) {
-  final iterator = state.iterator;
-
-  final (onMapDuplicate, map) = (
-    state.onMapDuplicate,
-    state.defaultMapDelegate(
-      mapStyle: NodeStyle.block,
-      indentLevel: key.indentLevel,
-      indent: fixedMapIndent,
-      keySpan: key.nodeSpan,
-    ),
-  );
+  final (iterator, onMapDuplicate) = (state.iterator, state.onMapDuplicate);
 
   state.onParseMapKey(key.parsed());
 
