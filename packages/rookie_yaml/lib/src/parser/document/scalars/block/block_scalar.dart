@@ -100,11 +100,14 @@ ParsedScalarInfo blockScalarParser(
   bool chunkAndExit(int current) {
     blockBuffer(current);
 
-    return iterateAndChunk(
+    final OnChunk(:sourceEnded) = iterateAndChunk(
       iterator,
       onChar: blockBuffer,
       exitIf: (_, curr) => curr.isLineBreak(),
-    ).sourceEnded;
+    );
+
+    end = iterator.currentLineInfo.current;
+    return sourceEnded;
   }
 
   blockParser:
