@@ -195,9 +195,12 @@ ParsedScalarInfo? plainParser(
           );
 
           if (indentDidChange) {
-            final (:start, :current) = iterator.currentLineInfo;
-            end = iterator.isEOF ? current : start;
+            final lineInfo = iterator.currentLineInfo;
+            end = iterator.isEOF ? lineInfo.current : lineInfo.start;
             indentOnExit = foldIndent;
+            break chunker;
+          } else if (iterator.isEOF) {
+            markEndNow();
             break chunker;
           }
 
@@ -205,6 +208,7 @@ ParsedScalarInfo? plainParser(
         }
 
       case _ when isInFlowContext && char.isFlowDelimiter():
+        markEndNow();
         break chunker;
 
       default:
