@@ -98,7 +98,9 @@ final class DocumentParser<Doc, R> {
          onMapDuplicate: onMapDuplicate,
          triggers: triggers,
        ),
-       _onDocReset = triggers?.onDocumentStart ?? ((_) {});
+       _onDocReset = triggers?.onDocumentStart ?? ((_) {}) {
+    _state.reset();
+  }
 
   /// Constructs the document after the node has been parsed completely.
   final DocumentBuilder<Doc, R> builder;
@@ -109,12 +111,33 @@ final class DocumentParser<Doc, R> {
   /// Called when a new document's parsing begins.
   final _OnDocStart _onDocReset;
 
+  /// Injects [GlobalTag]s and any known aliases/[inheritedNodes] ahead of time.
+  ///
+  /// `[NOTE]`: This injected state is not persisted across multiple documents.
+  /// You must call this method for each document that reuses this state.
+  void withIncrementalState({
+    Iterable<GlobalTag>? inheritedTags,
+    Map<String, R>? inheritedNodes,
+  }) {
+    if (inheritedTags != null) {
+      final tags = _state.globalTags;
+
+      for (final tag in inheritedTags) {
+        tags[tag.tagHandle] = tag;
+      }
+    }
+
+    if (inheritedNodes != null) {
+      _state.anchorNodes.addAll(inheritedNodes);
+    }
+  }
+
   /// Parses the next [Doc] if present in the YAML string.
   ///
   /// `NOTE:` This advances the parsing forward and holds no reference to a
   /// previously parsed [Doc].
   (bool didParse, Doc? parsed) parseNext() {
-    if ((_state..reset()).isEOF()) return _emptyDoc();
+    if (_state.isEOF()) return _emptyDoc();
 
     final ParserState(:iterator, :onParseComment, :logger) = _state;
     iterator.allowBOM(true);
@@ -207,9 +230,8 @@ final class DocumentParser<Doc, R> {
       onDocEnd: (end) => node.nodeSpan.parsingEnd = end,
     );
 
-    return (
-      true,
-      builder(
+    return _reset(
+      () => builder(
         (version: version, tags: tags.values, unknown: reserved),
         (
           index: _state.current,
@@ -351,9 +373,8 @@ extension<Doc, R> on DocumentParser<Doc, R> {
 
     _state.updateDocEndChars(DocumentMarker.none);
 
-    return (
-      true,
-      builder(
+    return _reset(
+      () => builder(
         (version: null, tags: Iterable.empty(), unknown: const []),
         (
           index: _state.current,
@@ -374,5 +395,12 @@ extension<Doc, R> on DocumentParser<Doc, R> {
         ),
       ),
     );
+  }
+
+  @pragma('vm:prefer-inline')
+  (bool, Doc) _reset(Doc Function() build) {
+    final doc = build();
+    _state.reset();
+    return (true, doc);
   }
 }

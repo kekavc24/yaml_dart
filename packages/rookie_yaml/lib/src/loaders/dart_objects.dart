@@ -56,15 +56,28 @@ void _dereferenceIterable(
 Object? _dereferenceAliases(Object? object, {required bool dereferenceAlias}) =>
     dereferenceAlias ? deepCopyReference(object) : object;
 
-/// Loads every document as a `Dart` object.
-List<Object?> _loadAsDartObject(
+/// Creates a [DocumentParser] for (generic) `Dart` objects that reads
+/// code units from a source [iterator]. Prefer using the provided
+/// [UnicodeIterator] and implementing an [Iterator] which emits [Unicode]
+/// values or using any of the helper constructors exposed by the [YamlSource]
+/// extension type.
+///
+/// If [dereferenceAliases] is `true`, every [Map] and [Iterable] anchor
+/// reference will be deeply-copied everytime the parser needs it. Otherwise,
+/// the parser will use the [Map] and [Iterable] reference "as-is".
+///
+/// If [throwOnMapDuplicate] is `false`, the parser skips entries whose keys
+/// are already in the YAML [Map] constructed and calls the [logger] callback
+/// provided **INFORMING** you of this action. Otherwise, always throws.
+DocumentParser<Object?, Object?> dartObjectParser(
   SourceIterator iterator, {
   required bool dereferenceAliases,
   required bool throwOnMapDuplicate,
   required CustomTriggers? triggers,
+  required DocumentBuilder<Object?, Object?>? docBuilder,
   required void Function(bool isInfo, String message)? logger,
-}) => loadYamlDocuments<Object?, Object?>(
-  DocumentParser(
+}) {
+  return DocumentParser(
     iterator,
     aliasFunction: (_, reference, _) =>
         _dereferenceAliases(reference, dereferenceAlias: dereferenceAliases),
@@ -79,7 +92,25 @@ List<Object?> _loadAsDartObject(
       message: message,
       throwOnMapDuplicate: throwOnMapDuplicate,
     ),
-    builder: (_, _, rootNode) => rootNode.root,
+    builder: docBuilder ?? (_, _, rootNode) => rootNode.root,
+  );
+}
+
+/// Loads every document as a `Dart` object.
+List<Object?> _loadAsDartObject(
+  SourceIterator iterator, {
+  required bool dereferenceAliases,
+  required bool throwOnMapDuplicate,
+  required CustomTriggers? triggers,
+  required void Function(bool isInfo, String message)? logger,
+}) => loadYamlDocuments<Object?, Object?>(
+  dartObjectParser(
+    iterator,
+    dereferenceAliases: dereferenceAliases,
+    throwOnMapDuplicate: throwOnMapDuplicate,
+    triggers: triggers,
+    docBuilder: null,
+    logger: logger,
   ),
 );
 

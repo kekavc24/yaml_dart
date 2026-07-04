@@ -38,6 +38,7 @@ export 'src/parser/document/yaml_document.dart';
 export 'src/parser/parser_utils.dart'
     show CharWriter, ParsedDirectives, DocumentInfo, RootNode;
 export 'src/scanner/encoding/character_encoding.dart';
+export 'src/scanner/encoding/utf_utils.dart' show Unicode;
 export 'src/scanner/source_iterator.dart';
 export 'src/scanner/span.dart';
 export 'src/schema/scalar_value.dart';

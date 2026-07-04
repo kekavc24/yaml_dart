@@ -1,7 +1,8 @@
 /// Byte range for a UTF-8 byte sequence. (start and end inclusive)
 typedef _MinMax = (int, int);
 
-///
+/// A decoded `unicode` grapheme cluster and the number of UTF-8 bytes or UTF-16
+/// code units represented by the `span`.
 typedef Unicode = ({int span, int unicode});
 
 extension UtfUtils on int {

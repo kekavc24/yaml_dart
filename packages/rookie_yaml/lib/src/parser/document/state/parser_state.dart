@@ -12,8 +12,6 @@ import 'package:rookie_yaml/src/schema/schema.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
-final _defaultGlobalTag = MapEntry(TagHandle.secondary(), yamlGlobalTag);
-
 /// A callback for handling map duplicates
 typedef MapDuplicateHandler =
     void Function(RuneOffset keyStart, RuneOffset keyEnd, String message);
@@ -109,7 +107,7 @@ final class ParserState<R> {
   /// Global directives.
   ///
   /// Secondary tag always resolves
-  final globalTags = Map.fromEntries([_defaultGlobalTag]);
+  var globalTags = {yamlGlobalTag.tagHandle: yamlGlobalTag};
 
   /// Index of document being parsed
   int _currentIndex = -1;
@@ -203,10 +201,7 @@ final class ParserState<R> {
     docStartExplicit = lastDocEndChars == '---';
     docEndExplicit = false;
 
-    globalTags
-      ..clear()
-      ..addEntries([_defaultGlobalTag]);
-
+    globalTags = {yamlGlobalTag.tagHandle: yamlGlobalTag};
     anchorNodes = {};
   }
 

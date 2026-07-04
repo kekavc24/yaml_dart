@@ -309,6 +309,63 @@ $star
     });
   });
 
+  group('Incremental State', () {
+    test('Inherits anchors from one document to the next', () {
+      final anchors = <String, Object?>{};
+      final docs = <Object?>{};
+
+      const yaml = '''
+&stub docs
+---
+*stub
+---
+*stub
+''';
+
+      parseAllWithStubs(
+        bootStrapParser(
+          yaml,
+          docBuilder: (_, _, rootNode) {
+            if (anchors.isEmpty) anchors.addAll(rootNode.anchors);
+            docs.add(rootNode.root);
+            return null;
+          },
+        ),
+        anchors: anchors,
+      );
+
+      check(anchors)
+        ..isNotEmpty()
+        ..deepEquals({'stub': 'docs'});
+
+      check(docs)
+        ..length.equals(1)
+        ..containsEqualInOrder(['docs']);
+    });
+
+    test('Inherits global tags from one document to the next', () {
+      final multi = TagHandle.named('multi');
+      final globalTag = GlobalTag.fromTagUri(multi, r'doc:tag.handle');
+
+      final local = TagShorthand.fromTagUri(multi, 'tag');
+
+      final yaml =
+          '''
+$globalTag
+---
+$local tag-is-inherited
+...
+# Next document
+
+$local inherited
+''';
+
+      check(
+        () => parseAllWithStubs(bootStrapParser(yaml), tags: [globalTag]),
+      ).returnsNormally();
+    });
+  });
+
   group('Exceptions', () {
     test('Throws exception when a named tag is used as global tag prefix', () {
       final global = GlobalTag.fromTagShorthand(
