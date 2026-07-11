@@ -17,6 +17,7 @@ import 'package:rookie_yaml/src/parser/document/scalars/flow/single_quoted.dart'
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_node.dart';
@@ -48,6 +49,45 @@ T _parseCustomKind<T, Obj>(
     ),
     _ => onMatchScalar(resolver as ObjectFromScalarBytes<Obj>),
   };
+}
+
+/// Creates an empty block node of the specified [kind] since the empty scalar
+/// was captured by a tag present in the [property].
+NodeDelegate<Obj> emptyBlockOfKind<Obj>(
+  CustomKind kind,
+  NodeProperty property, {
+  required int indentLevel,
+  required int indent,
+  required RuneOffset start,
+}) {
+  return _parseCustomKind<NodeDelegate<Obj>, Obj>(
+    kind,
+    property: property,
+    onMatchMap: (mapBuilder) => MapLikeDelegate.boxed(
+      mapBuilder.onCustomMap(),
+      collectionStyle: NodeStyle.block,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+      afterMapping: mapBuilder.afterObject<Obj>(),
+    ),
+    onMatchIterable: (listBuilder) => SequenceLikeDelegate.boxed(
+      listBuilder.onCustomIterable(),
+      collectionStyle: NodeStyle.block,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+      afterSequence: listBuilder.afterObject<Obj>(),
+    ),
+    onMatchScalar: (resolver) => BoxedScalar(
+      resolver.onCustomScalar(),
+      scalarStyle: ScalarStyle.plain,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+      afterScalar: resolver.afterObject<Obj>(),
+    ),
+  );
 }
 
 typedef OnScalar<R, T> =

@@ -101,6 +101,32 @@ block: value
   });
 
   group('Resolvers', () {
+    test('Handles captured empty resolver tags correctly', () {
+      final yaml =
+          '''
+- $setTag
+- $mappingTag
+- $integerTag
+''';
+
+      check(
+        loadResolvedDartObject(
+          yaml,
+          nodeResolvers: {
+            setTag: listResolver,
+            mappingTag: mapResolver,
+            integerTag: ObjectFromScalarBytes(
+              onCustomScalar: () => BytesToScalar.sliced(mapper: (_) => 24),
+            ),
+          },
+        ),
+      ).isA<List>().containsMatchingInOrder([
+        (seq) => seq.isA<List<int>>().isEmpty(),
+        (map) => map.isA<Set<String>>().isEmpty(),
+        (scalar) => scalar.isA<int>().equals(24),
+      ]);
+    });
+
     test('Loads a predictable strongly typed set from a map', () {
       // Flow map that has no values
       final sources = [

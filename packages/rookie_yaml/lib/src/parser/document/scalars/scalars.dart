@@ -42,6 +42,13 @@ NodeDelegate<Obj> emptyBlockNode<Obj>(
       indentLevel: indentLevel,
       indent: indent,
     ),
+    NodeProperty(kind: final CustomKind kind) => emptyBlockOfKind<Obj>(
+      kind,
+      property,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+    ),
     _ => nullScalarDelegate(
       indentLevel: indentLevel,
       indent: indent,

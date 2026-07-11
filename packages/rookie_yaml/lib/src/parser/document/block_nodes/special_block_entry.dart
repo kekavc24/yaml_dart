@@ -1,4 +1,3 @@
-import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
@@ -19,40 +18,17 @@ typedef SpecialBlockSequenceInfo = ({
   BlockInfo blockInfo,
 });
 
-/// Creates a [SequenceLikeDelegate] based on its kind.
-///
-/// An [IterableToObjectDelegate] may be returned if the parser was instructed
-/// to treat a specific tag embedded in the node's [property] as a [CustomKind].
-/// Otherwise, a generic [SequenceDelegate] is returned.
-SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
-  ParsedProperty? property, {
-  required RuneOffset start,
-  required int indent,
-  required int indentLevel,
-  required ParserState<Obj> state,
-}) {
-  // Check if this special sequence was annotated with custom properties
-  if (property case NodeProperty(
-    kind: CustomKind.iterable,
-    customResolver: ObjectFromIterable<Obj, Obj> resolver,
-  )) {
-    return SequenceLikeDelegate.boxed(
-      resolver.onCustomIterable(),
-      collectionStyle: NodeStyle.block,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: start,
-      afterSequence: resolver.afterObject<Obj>(),
-    );
-  }
+typedef _CheckedSpecial<Obj> = (
+  SequenceLikeDelegate<Obj, Obj>? node,
+  ParsedProperty? propery,
+);
 
-  return state.defaultSequenceDelegate(
-    style: NodeStyle.block,
-    indent: indent,
-    indentLevel: indentLevel,
-    start: start,
-    kind: property?.kind ?? YamlCollectionKind.sequence,
-  );
+_CheckedSpecial<Obj>? _checkIfSpecial<Obj>(NodeDelegate<Obj> node) {
+  return switch (node) {
+    EfficientScalarDelegate(isNullDelegate: true) => (null, node.property),
+    SequenceLikeDelegate<Obj, Obj>() => (node, null),
+    _ => null,
+  };
 }
 
 /// Attempts to parse a block sequence on the same indent level as its implicit
@@ -95,7 +71,7 @@ SpecialBlockSequenceInfo composeSpecialBlockSequence<Obj>(
 }) {
   final (:blockInfo, :node) = blockNode;
 
-  if (node case EfficientScalarDelegate(isNullDelegate: true)
+  if (_checkIfSpecial<Obj>(node) case final checked?
       when !state.iterator.isEOF &&
           !blockInfo.docMarker.stopIfParsingDoc &&
           blockInfo.exitIndent == keyIndent &&
@@ -105,7 +81,10 @@ SpecialBlockSequenceInfo composeSpecialBlockSequence<Obj>(
       state,
       keyIndent: keyIndent,
       keyIndentLevel: keyIndentLevel,
-      property: node.property,
+      delegate: checked.$1
+        ?..indent = keyIndent
+        ..indentLevel = keyIndentLevel,
+      property: checked.$2,
       onSequence: onSequenceOrBlockNode,
       onNextImplicitEntry: onNextImplicitEntry,
     );
@@ -149,21 +128,21 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
   ParserState<Obj> state, {
   required int keyIndent,
   required int keyIndentLevel,
-  required ParsedProperty? property,
   required void Function(NodeDelegate<Obj> sequence) onSequence,
   required OnBlockMapEntry<Obj> onNextImplicitEntry,
   RuneOffset? structuralStart,
+  SequenceLikeDelegate<Obj, Obj>? delegate,
+  ParsedProperty? property,
 }) {
-  final ParserState(:iterator) = state;
-
   final (:greedyOnPlain, :sequence) = parseBlockSequence(
-    _delegateHelper<Obj>(
-      property,
-      state: state,
-      start: structuralStart ?? iterator.currentLineInfo.current,
-      indent: keyIndent,
-      indentLevel: keyIndentLevel,
-    )..updateNodeProperties = property,
+    delegate ??
+        state.defaultSequenceDelegate(
+          style: NodeStyle.block,
+          indent: keyIndent,
+          indentLevel: keyIndentLevel,
+          start: state.iterator.currentLineInfo.current,
+          kind: property?.kind ?? YamlCollectionKind.sequence,
+        ),
     state: state,
     levelWithBlockMap: true,
   );
