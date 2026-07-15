@@ -184,6 +184,7 @@ T initFlowCollection<R, T extends NodeDelegate<R>>(
   }
 
   iterator.nextChar();
+  final flowCollection = init(current);
 
   if (!nextSafeLineInFlow(
     iterator,
@@ -201,7 +202,7 @@ T initFlowCollection<R, T extends NodeDelegate<R>>(
     );
   }
 
-  return init(current);
+  return flowCollection;
 }
 
 /// Checks if the current char in the [iterator] matches the closing [delimiter]
