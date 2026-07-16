@@ -36,8 +36,8 @@ RuneOffset _getLineStart({
 }) => (
   lineIndex: lineIndex,
   columnIndex: 0,
-  span: 0,
-  rawOffset: rawOffset + span,
+  span: span,
+  rawOffset: rawOffset,
   offset: currentOffset,
 );
 
@@ -153,7 +153,10 @@ final class UnicodeIterator extends SourceIterator {
       _currentCharSpan = char.span;
       _currentChar = char.unicode;
 
-      _lineStartOffset = _getLineStart(span: _currentCharSpan);
+      _lineStartOffset = _getLineStart(
+        span: _currentCharSpan,
+        rawOffset: _currentCharSpan - 1,
+      );
 
       if (!_iterator.moveNext()) {
         _bufferCurrent();
