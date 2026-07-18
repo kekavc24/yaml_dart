@@ -19,9 +19,9 @@ A collection of `Dart` packages that help you to interact with YAML and the feat
 
 Visit [CONTRIBUTING.md](CONTRIBUTING.md) for more information. All contributions are welcome.
 
-[rookie_link]: ./packages/rookie_yaml/README.md
+[rookie_link]: ./packages/rookie_yaml
 [rookie_shield]: https://img.shields.io/pub/v/rookie_yaml.svg
 [rookie_pub]: https://pub.dev/packages/rookie_yaml
-[dump_link]: ./packages/dump_yaml/README.md
+[dump_link]: ./packages/dump_yaml
 [dump_shield]: https://img.shields.io/pub/v/dump_yaml.svg
 [dump_pub]: https://pub.dev/packages/dump_yaml
