@@ -110,12 +110,18 @@ ParsedScalarInfo blockScalarParser(
     return sourceEnded;
   }
 
+  void markRun() {
+    if (didRun) return;
+    didRun = true;
+  }
+
   blockParser:
   while (!iterator.isEOF) {
     final indent = trueIndent ?? minimumIndent;
     var char = iterator.current;
 
     switch (char) {
+      checkIndent:
       case carriageReturn || lineFeed:
         {
           char = skipCrIfPossible(char, iterator: iterator);
@@ -185,10 +191,18 @@ ParsedScalarInfo blockScalarParser(
 
               lastWasIndented = startsWithTab || lastWasIndented;
             }
+          } else {
+            // Avoid calling [iterator.currentLineInfo] multiple times for
+            // sequential line breaks (inefficient). Repeatedly skip all.
+            char = charAfter!;
+            iterator.nextChar();
+            markRun();
+            continue checkIndent;
           }
 
           iterator.nextChar();
-          didRun = true;
+          markRun();
+          end = iterator.currentLineInfo.start;
         }
 
       case blockSequenceEntry || period
