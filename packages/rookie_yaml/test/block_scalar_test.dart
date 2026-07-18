@@ -186,7 +186,7 @@ $indent
   });
 
   group('Literal Block Style', () {
-    test('Parses simple scalar', () {
+    test('Parses simple scalar (EOF)', () {
       const scalar =
           '|\n'
           ' literal with inferredIndent of 1 space.\n'
@@ -194,7 +194,7 @@ $indent
 
       const parsed =
           'literal with inferredIndent of 1 space.\n'
-          'Nothing more, nothing less';
+          'Nothing more, nothing less\n';
 
       check(
           parseBlockScalar(
@@ -208,7 +208,7 @@ $indent
         ..hasFormattedContent(parsed);
     });
 
-    test('Treats leading space in more indented lines as content', () {
+    test('Treats leading space in more indented lines as content (EOF)', () {
       const scalar =
           '|\n'
           '\n\n'
@@ -220,7 +220,7 @@ $indent
           '\n\n'
           'Indent inferred here.\n'
           ' This line is more indented. It will have leading space\n'
-          '\tTab is not an indent but content';
+          '\tTab is not an indent but content\n';
 
       check(
           parseBlockScalar(
@@ -287,14 +287,15 @@ $indent
   });
 
   group('Folded Block Style', () {
-    test('Parses simple scalar', () {
+    test('Parses simple scalar (EOF)', () {
       const scalar =
           '>\n'
           ' folded with inferredIndent of 1 space.\n'
           ' Nothing more, nothing less';
 
+      // EOF
       const parsed =
-          'folded with inferredIndent of 1 space. Nothing more, nothing less';
+          'folded with inferredIndent of 1 space. Nothing more, nothing less\n';
 
       check(
           parseBlockScalar(
@@ -308,7 +309,7 @@ $indent
         ..hasFormattedContent(parsed);
     });
 
-    test('Never folds and preserves empty lines when more indented', () {
+    test('Never folds and preserves empty lines when more indented (EOF)', () {
       // From YAML site: https://yaml.org/spec/1.2.2/#813-folded-style
       // Visit if view isn't appealing (applies to the result shown too 😉).
       const scalar =
@@ -338,7 +339,7 @@ $indent
           '  * list\n'
           '  * lines\n'
           '\n'
-          'last line';
+          'last line\n'; // EOF
 
       check(
           parseBlockScalar(

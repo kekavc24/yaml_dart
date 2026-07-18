@@ -80,8 +80,8 @@ block: value
           ScalarStyle.doubleQuoted => '"$value"',
           ScalarStyle.singleQuoted => "'$value'",
           ScalarStyle.plain => value,
-          ScalarStyle.folded => '>\n $value',
-          ScalarStyle.literal => '|\n $value',
+          ScalarStyle.folded => '>-\n $value',
+          ScalarStyle.literal => '|-\n $value',
         };
 
         check(
