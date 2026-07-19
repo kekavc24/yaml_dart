@@ -114,9 +114,11 @@ ParsedScalarInfo? plainParser(
     }
   }
 
-  // Marks the current offset as the tentative end offset.
-  void markEndNow() {
-    end = iterator.currentLineInfo.current;
+  // Marks the start of the line or the current offset as the tentative end
+  // offset.
+  void markEndNow({required bool start}) {
+    final lineInfo = iterator.currentLineInfo;
+    end = start ? lineInfo.start : lineInfo.current;
   }
 
   chunker:
@@ -133,7 +135,7 @@ ParsedScalarInfo? plainParser(
               charBefore.isNullOr((c) => c.isLineBreak()) &&
               charAfter == char:
         {
-          markEndNow();
+          markEndNow(start: false);
 
           docMarkerType = checkForDocumentMarkers(
             iterator,
@@ -144,10 +146,7 @@ ParsedScalarInfo? plainParser(
             throwIfDocEndInvalid: true,
           );
 
-          if (docMarkerType.stopIfParsingDoc) {
-            break chunker;
-          }
-
+          if (docMarkerType.stopIfParsingDoc) break chunker;
           flushFoldingBuffer(); // Non-space chars found
         }
 
@@ -160,7 +159,7 @@ ParsedScalarInfo? plainParser(
                 c.isWhiteSpace() ||
                 c.isLineBreak(),
           ):
-        markEndNow();
+        markEndNow(start: false);
         break chunker;
 
       // A look behind condition if encountered while folding the scalar.
@@ -168,18 +167,18 @@ ParsedScalarInfo? plainParser(
           when charBefore.isNotNullAnd(
             (c) => c.isWhiteSpace() || c.isLineBreak(),
           ):
-        markEndNow();
+        markEndNow(start: true);
         break chunker;
 
       // A lookahead condition of the rule above before folding the scalar
       case space || tab when charAfter == comment:
-        markEndNow();
+        markEndNow(start: false);
         break chunker;
 
       // Restricted to a single line when implicit. Instead of throwing, exit
       // and allow parser to determine next course of action
       case carriageReturn || lineFeed when isImplicit:
-        markEndNow();
+        markEndNow(start: false);
         break chunker;
 
       // Attempt to fold by default anytime we see a line break or white space
@@ -195,12 +194,11 @@ ParsedScalarInfo? plainParser(
           );
 
           if (indentDidChange) {
-            final lineInfo = iterator.currentLineInfo;
-            end = iterator.isEOF ? lineInfo.current : lineInfo.start;
+            markEndNow(start: !iterator.isEOF);
             indentOnExit = foldIndent;
             break chunker;
           } else if (iterator.isEOF) {
-            markEndNow();
+            markEndNow(start: false);
             break chunker;
           }
 
@@ -208,7 +206,7 @@ ParsedScalarInfo? plainParser(
         }
 
       case _ when isInFlowContext && char.isFlowDelimiter():
-        markEndNow();
+        markEndNow(start: false);
         break chunker;
 
       default:
@@ -223,7 +221,7 @@ ParsedScalarInfo? plainParser(
           );
 
           if (sourceEnded) {
-            markEndNow();
+            markEndNow(start: false);
             break chunker;
           }
         }
