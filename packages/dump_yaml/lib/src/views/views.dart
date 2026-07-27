@@ -142,7 +142,7 @@ final class DartMap extends YamlMapping<Map<Object?, Object?>> {
 /// Helper that returns the keys of an object.
 ///
 /// {@category dump_map}
-typedef GetKeys = Iterable<Object?> Function(Object? object);
+typedef GetKeys = Set<Object?> Function(Object? object);
 
 /// Helper that reads the value of a key from a `map-like` object.
 ///
@@ -172,7 +172,7 @@ final class CustomMap extends YamlMapping<Object?> {
 
   /// Obtains the keys from a custom [node]. Duplicate keys will not have their
   /// entries visited by the `TreeBuilder`.
-  GetKeys getKeys = (o) => [o];
+  GetKeys getKeys = (o) => {o};
 
   /// Obtains the values from the [node] via its keys.
   GetValue readValue = (_, _) => null;

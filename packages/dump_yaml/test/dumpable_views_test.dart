@@ -62,7 +62,7 @@ void main() {
             {'key': 'value'},
           ])
           ..getKeys = ((obj) =>
-              (obj as Iterable).map((e) => e is MapEntry ? e.key : e))
+              (obj as Iterable).map((e) => e is MapEntry ? e.key : e).toSet())
           ..readValue = (map, current) =>
               current.index == 2 ? ((map as List)[2] as MapEntry).value : null,
       );
@@ -78,8 +78,8 @@ void main() {
 
       treeBuilder.buildFor(
         CustomMap(
-          [map, DartMap(map), list, YamlIterable(list)],
-        )..getKeys = (object) => (object as List),
+          {map, DartMap(map), list, YamlIterable(list)},
+        )..getKeys = (object) => (object as Set),
       );
 
       check(
