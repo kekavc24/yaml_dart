@@ -116,7 +116,7 @@ Iterable<String> _toYamlScalar(
           unfolding: unfoldNormal,
         );
 
-        yield* isDoubleQuoted || lines.isEmpty ? asQuoted(lines) : lines;
+        yield* isDoubleQuoted ? asQuoted(lines) : lines;
       }
 
     // Block Styles
