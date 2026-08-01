@@ -183,12 +183,6 @@ abstract base class ConcreteNode<To> extends DumpableView {
 
   /// Converts an object to type [To].
   ObjectFromView<To> get toFormat;
-
-  @override
-  bool operator ==(Object other) => node == other;
-
-  @override
-  int get hashCode => node.hashCode;
 }
 
 /// {@category dumpable_view}

@@ -54,7 +54,7 @@ void main() {
           )
           ..dump('');
 
-        check(buffer.toString()).equals('""');
+        check(buffer.toString()).equals('');
       },
     );
 

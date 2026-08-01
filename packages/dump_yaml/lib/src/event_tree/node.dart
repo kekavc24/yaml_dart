@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:dump_yaml/src/event_tree/hashing.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:meta/meta.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
@@ -24,6 +25,7 @@ extension Doc on DocumentNode {
 abstract class TreeNode<T> extends CompactYamlNode {
   TreeNode(
     this.nodeStyle, {
+    required this.nodeHash,
     Iterable<String>? comments,
     CommentStyle? commentStyle,
     this.anchor,
@@ -36,6 +38,8 @@ abstract class TreeNode<T> extends CompactYamlNode {
 
   /// Node's comment style
   final CommentStyle commentStyle;
+
+  final FreeHash nodeHash;
 
   @override
   final NodeStyle nodeStyle;
@@ -69,6 +73,7 @@ final class ReferenceNode extends TreeNode<String> {
   ReferenceNode(
     this.alias, {
     required super.comments,
+    required super.nodeHash,
     super.commentStyle,
     this.recursive = false,
   }) : super(NodeStyle.flow);
@@ -98,6 +103,7 @@ final class ContentNode extends TreeNode<Iterable<String>> {
   ContentNode(
     this.node,
     super.nodeStyle, {
+    required super.nodeHash,
     required this.inheritParentIndent,
     required this.isMultiline,
     super.comments,
@@ -129,6 +135,7 @@ final class CollectionNode<T> extends TreeNode<ListQueue<T>> {
   CollectionNode(
     this.node,
     super.nodeStyle, {
+    required super.nodeHash,
     required this.nodeType,
     required this.forcedInline,
     required this.isMultiline,

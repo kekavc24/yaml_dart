@@ -137,51 +137,61 @@ void main() {
   test('Dumps keys as explicit if trailing comments are present', () {
     dumper.reset(config: Config.defaults());
 
-    final map = flowNodes.fold(
-      <DumpableView, String>{},
-      (m, e) => m..[e] = 'value',
+    final orderedMap = flowNodes.fold(
+      <Map<DumpableView, String>>[],
+      (m, e) => m..add({e: 'value'}),
     );
-    dumper.dump(map);
+    dumper.dump(orderedMap);
 
     check(buffer.toString()).equals('''
-? 24 # trailing
-     # comments
-: value
-? '24' # trailing
+- ? 24 # trailing
        # comments
-: value
-? "24" # trailing
+  : value
+- ? '24' # trailing
+         # comments
+  : value
+- ? "24" # trailing
+         # comments
+  : value
+- ? [] # trailing
        # comments
-: value
-? [] # trailing
-     # comments
-: value
-? {} # trailing
-     # comments
-: value
+  : value
+- ? {} # trailing
+       # comments
+  : value
 ''');
 
     buffer.clear();
-    dumper.dump(DartMap(map)..nodeStyle = NodeStyle.flow);
+    dumper.dump(YamlIterable(orderedMap)..nodeStyle = NodeStyle.flow);
 
     check(buffer.toString()).equals('''
-{
-  ? 24 # trailing
-       # comments
-  : value,
-  ? '24' # trailing
+[
+  {
+    ? 24 # trailing
          # comments
-  : value,
-  ? "24" # trailing
+    : value
+  },
+  {
+    ? '24' # trailing
+           # comments
+    : value
+  },
+  {
+    ? "24" # trailing
+           # comments
+    : value
+  },
+  {
+    ? [] # trailing
          # comments
-  : value,
-  ? [] # trailing
-       # comments
-  : value,
-  ? {} # trailing
-       # comments
-  : value
-}''');
+    : value
+  },
+  {
+    ? {} # trailing
+         # comments
+    : value
+  }
+]''');
   });
 
   test('Ignores comments when a flow collection is inlined', () {

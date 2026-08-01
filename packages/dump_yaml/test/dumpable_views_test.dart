@@ -48,7 +48,7 @@ void main() {
       check(treeBuilder.builtNode()).isA<CollectionNode<MappingEntry>>()
         ..hasStyle(NodeStyle.block)
         ..hasTag(null)
-        ..hasAnchor(null);
+        ..hasAnchor('recursive');
     });
 
     test('Removes duplicates from a custom YamlMapping', () {

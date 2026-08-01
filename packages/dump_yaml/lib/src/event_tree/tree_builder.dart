@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:dump_yaml/src/configs.dart';
+import 'package:dump_yaml/src/event_tree/hashing.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/scalar_content.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
@@ -13,28 +14,35 @@ extension on String {
       isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
 }
 
-bool _genericEquals(Object? thiz, Object? that) {
-  if ((thiz is Map && that is Map) || (thiz is List && that is List)) {
-    return yamlCollectionEquality.equals(thiz, that);
-  }
+final _missing = TagShorthand.primary('unresolved');
 
-  return thiz == that;
-}
+/// Callback for tracking the current path.
+typedef PathLogger = void Function(String path);
 
-Object? _unwrapCollections(Object? object) => switch (object) {
-  YamlMapping() || YamlIterable() => (object as ConcreteNode).node,
-  _ => object,
-};
+/// Callback for lazily mapping an object to another.
+typedef ExpandObject = Object? Function(Object? object);
+
+typedef _TagInfo = ({String? qualifiedTag, String generic});
+
+typedef _IfNotRecursive<T> =
+    void Function(
+      String recursiveAnchor,
+      String? qualifiedTag,
+      LazyHash hash,
+      T object,
+    );
+
+void _noOp(String _) {}
 
 mixin _Decomposer {
   /// Anchors in the document.
-  final _anchors = <String>{};
+  final _anchors = <String, FreeHash?>{};
 
   /// Global tags.
   final _globalTags = <TagHandle, GlobalTag>{};
 
-  String? _pushAnchor(String? anchor) {
-    if (anchor != null) _anchors.add(anchor);
+  String? _pushAnchor(String? anchor, FreeHash hash) {
+    if (anchor != null) _anchors[anchor] = hash;
     return anchor;
   }
 
@@ -46,9 +54,8 @@ mixin _Decomposer {
   String? _localTag(
     ResolvedTag? nodeTag, {
     required void Function(TagShorthand tag) validate,
-    bool includeGeneric = false,
   }) {
-    if (nodeTag == null || (!includeGeneric && nodeTag.isGeneric)) return null;
+    if (nodeTag == null) return null;
     final (:verbatim, :globalTag, :tag) = resolvedTagInfo(nodeTag);
 
     // Cannot have verbatim and global/local tag.
@@ -102,34 +109,33 @@ A global tag with the current tag handle already exists.
     return tag.toString();
   }
 
+  TagShorthand _genericTag(Object? object) => switch (object) {
+    Iterable() => /* object is Set ? setTag : */ sequenceTag,
+    Map() => mappingTag,
+    int() => integerTag,
+    double() => floatTag,
+    String() => stringTag,
+    bool() => booleanTag,
+    null => nullTag,
+    _ => _missing,
+  };
+
   /// Matches the [object] to its YAML Schema tag only if [includeGeneric] is
   /// `true`.
-  String? _genericIfMissing(Object? object, {bool includeGeneric = false}) {
-    if (!includeGeneric) return null;
-
-    return switch (object) {
-      Iterable() => /* object is Set ? setTag : */ sequenceTag,
-      Map() => mappingTag,
-      int() => integerTag,
-      double() => floatTag,
-      String() => stringTag,
-      bool() => booleanTag,
-      null => nullTag,
-      _ => null,
-    }?.toString();
+  _TagInfo _genericIfMissing({
+    Object? object,
+    bool includeGeneric = false,
+    TagShorthand? qualified,
+    TagShorthand? generic,
+  }) {
+    final genericTag = qualified ?? generic ?? _genericTag(object);
+    return (
+      qualifiedTag: (qualified ?? (includeGeneric ? genericTag : null))
+          ?.toString(),
+      generic: genericTag.toString(),
+    );
   }
-
-  String? _kindToTag(NodeConfig config, TagShorthand tag) =>
-      config.includeSchemaTag ? tag.toString() : null;
 }
-
-/// Callback for tracking the current path.
-typedef PathLogger = void Function(String path);
-
-/// Callback for lazily mapping an object to another.
-typedef ExpandObject = Object? Function(Object? object);
-
-void _noOp(String _) {}
 
 /// Maps object to itself.
 Object? _identity(Object? object) => object;
@@ -190,10 +196,10 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   int? _recursiveCount;
 
   /// Tracks the current collection-like object being walked.
-  final _recursiveTracker = HashMap<Object?, String>.identity();
+  final _recursiveTracker = HashMap<Object?, (String, FreeHash)>.identity();
 
   /// Links an [object] to an [anchor] just before the builder walks.
-  String _trackRecursive(Object? object, [String? anchor]) {
+  String _trackRecursive(Object? object, FreeHash hash, String? anchor) {
     String fetchCount() {
       var out = '';
 
@@ -208,7 +214,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     }
 
     final tracker = anchor ?? 'recursive${fetchCount()}';
-    _recursiveTracker[object] = tracker;
+    _recursiveTracker[object] = (tracker, hash);
     return tracker;
   }
 
@@ -254,24 +260,30 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   bool _buildWithStyle(NodeStyle style, [NodeStyle? parent]) =>
       !((parent ?? _nearestCollection()).isIncompatible(style));
 
+  _TagInfo _tagFromView(
+    ResolvedTag? tag, {
+    required TagShorthand generic,
+    required void Function(TagShorthand tag) validate,
+  }) {
+    final qualified = _localTag(tag, validate: validate);
+    return (qualifiedTag: qualified, generic: qualified ?? generic.toString());
+  }
+
   /// Visits a recursive [object] and tracks the object's state.
   void _visitRecursiveCandidate<T>(
     T object, {
-    required void Function(String? recursiveAnchor, T object) visit,
-    required bool trackObject,
+    required _IfNotRecursive<T> visit,
+    required bool isMap,
+    required _TagInfo tagInfo,
     String? anchorOnVisit,
     Iterable<String>? comments,
     CommentStyle? commentStyle,
   }) {
-    if (!trackObject) {
-      visit(null, object);
-      return;
-    }
-
-    if (_recursiveTracker[object] case String anchored) {
+    if (_recursiveTracker[object] case (String anchored, FreeHash refHash)) {
       _addNode(
         ReferenceNode(
           anchored,
+          nodeHash: refHash,
           comments: comments,
           commentStyle: commentStyle,
           recursive: true,
@@ -282,8 +294,9 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       return;
     }
 
-    final anchor = _trackRecursive(object, anchorOnVisit);
-    visit(anchor, object);
+    final hash = LazyHash(isMap: isMap, seedTag: tagInfo.generic);
+    final anchor = _trackRecursive(object, hash, anchorOnVisit);
+    visit(anchor, tagInfo.qualifiedTag, hash, object);
     _recursiveTracker.remove(object);
   }
 
@@ -298,10 +311,19 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void visitAlias(Alias alias) {
     final ref = alias.alias;
 
-    if (_anchors.contains(ref)) {
+    if (_anchors.containsKey(ref)) {
+      var hash = _anchors[ref];
+
+      // Assume that these anchors injected into the builder.
+      if (hash == null) {
+        hash = QualifiedHash.danglingReference(ref);
+        _anchors[ref] = hash;
+      }
+
       _addNode(
         ReferenceNode(
           ref,
+          nodeHash: hash,
           comments: alias.comments,
           commentStyle: alias.commentStyle,
         ),
@@ -317,11 +339,16 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   @override
   void visitIterable(Iterable<Object?> iterable) => _visitRecursiveCandidate(
     iterable,
-    trackObject: true,
-    visit: (anchor, object) => _buildIterable(
+    isMap: false,
+    tagInfo: _genericIfMissing(
+      includeGeneric: _config.includeSchemaTag,
+      generic: sequenceTag,
+    ),
+    visit: (anchor, tag, hash, object) => _buildIterable(
       object,
       style: _config.iterableStyle,
-      localTag: _kindToTag(_config, sequenceTag),
+      hash: hash,
+      localTag: tag,
       forceInline: _inlineRules.last,
       recursiveAnchor: anchor,
     ),
@@ -333,23 +360,25 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     _visitRecursiveCandidate(
       iterable.node,
-      trackObject: node is Iterable,
-      anchorOnVisit: _pushAnchor(anchor),
+      isMap: false,
+      tagInfo: _tagFromView(
+        iterable.tag,
+        generic: sequenceTag,
+        validate: throwIfNotListTag,
+      ),
       comments: comments,
       commentStyle: commentStyle,
-      visit: (recursive, object) => _buildIterable(
+      anchorOnVisit: anchor,
+      visit: (recursive, tag, hash, object) => _buildIterable(
         iterable.toFormat(object),
         style: iterable.nodeStyle,
+        hash: hash,
         forceInline: iterable.forceInline || _inlineRules.last,
         comments: comments,
         anchor: anchor,
         recursiveAnchor: recursive,
         commentStyle: commentStyle,
-        localTag: _localTag(
-          iterable.tag,
-          validate: throwIfNotListTag,
-          includeGeneric: _config.includeSchemaTag,
-        ),
+        localTag: tag,
       ),
     );
   }
@@ -357,11 +386,16 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   @override
   void visitMap(Map<Object?, Object?> map) => _visitRecursiveCandidate(
     map,
-    trackObject: true,
-    visit: (anchor, object) => _buildMap(
+    isMap: true,
+    tagInfo: _genericIfMissing(
+      includeGeneric: _config.includeSchemaTag,
+      generic: mappingTag,
+    ),
+    visit: (anchor, tag, hash, object) => _buildMap(
       object.entries,
       style: _config.mapStyle,
-      localTag: _kindToTag(_config, mappingTag),
+      hash: hash,
+      localTag: tag,
       forceInline: _inlineRules.last,
       recursiveAnchor: anchor,
     ),
@@ -373,57 +407,56 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     _visitRecursiveCandidate(
       mapping.node,
-      trackObject: node is Map,
-      anchorOnVisit: _pushAnchor(anchor),
+      isMap: true,
+      tagInfo: _tagFromView(
+        mapping.tag,
+        validate: throwIfNotMapTag,
+        generic: mappingTag,
+      ),
+      anchorOnVisit: anchor,
       comments: comments,
       commentStyle: commentStyle,
-      visit: (recursive, object) => _buildMap(
+      visit: (recursive, tag, hash, object) => _buildMap(
         mapping.toFormat(object),
         style: mapping.nodeStyle,
+        hash: hash,
         forceInline: mapping.forceInline || _inlineRules.last,
         comments: comments,
         anchor: anchor,
         recursiveAnchor: recursive,
         commentStyle: commentStyle,
-        localTag: _localTag(
-          mapping.tag,
-          validate: throwIfNotMapTag,
-          includeGeneric: _config.includeSchemaTag,
-        ),
+        localTag: tag,
       ),
     );
   }
 
   @override
-  void visitScalar(Object? scalar) {
-    _buildScalar(
-      scalar?.toString() ?? '',
-      scalarStyle: _config.scalarStyle,
-      localTag: _genericIfMissing(
-        scalar,
-        includeGeneric: _config.includeSchemaTag,
-      ),
-      forceInline: _inlineRules.last,
-    );
-  }
+  void visitScalar(Object? scalar) => _buildScalar(
+    scalar?.toString() ?? '',
+    scalarStyle: _config.scalarStyle,
+    tagInfo: _genericIfMissing(
+      object: scalar,
+      includeGeneric: _config.includeSchemaTag,
+    ),
+    forceInline: _inlineRules.last,
+  );
 
   @override
   void visitScalarView(ScalarView scalar) {
-    final ScalarView(:comments, :anchor, :tag, :forceInline, :scalarStyle) =
-        scalar;
+    final ScalarView(:node) = scalar;
 
     _buildScalar(
-      scalar.toFormat(scalar.node),
-      scalarStyle: scalarStyle,
+      scalar.toFormat(node),
+      scalarStyle: scalar.scalarStyle,
       emptyAsNull: scalar.emptyAsNull,
-      forceInline: forceInline || _inlineRules.last,
-      comments: comments,
-      anchor: _pushAnchor(anchor),
+      forceInline: scalar.forceInline || _inlineRules.last,
+      comments: scalar.comments,
+      anchor: scalar.anchor,
       commentStyle: scalar.commentStyle,
-      localTag: _localTag(
-        tag,
+      tagInfo: _tagFromView(
+        scalar.tag,
         validate: throwIfNotScalarTag,
-        includeGeneric: _config.includeSchemaTag,
+        generic: _genericTag(node),
       ),
     );
   }
@@ -433,10 +466,10 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     String scalar, {
     required ScalarStyle scalarStyle,
     required bool forceInline,
+    required _TagInfo tagInfo,
     bool emptyAsNull = false,
     List<String>? comments,
     String? anchor,
-    String? localTag,
     CommentStyle? commentStyle,
   }) {
     final collectionStyle = _nearestCollection();
@@ -454,15 +487,18 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       parentIsBlock: collectionStyle.isBlock,
     );
 
+    final hash = QualifiedHash.scalar(tagInfo.generic, scalar);
+
     _addNode(
       ContentNode(
         lines,
         dumpingStyle.nodeStyle,
+        nodeHash: hash,
         inheritParentIndent: useParentIndent,
         isMultiline: isMultiline,
         comments: comments,
-        anchor: anchor,
-        localTag: localTag,
+        anchor: _pushAnchor(anchor, hash),
+        localTag: tagInfo.qualifiedTag,
         commentStyle: commentStyle?.ofQualified(dumpingStyle.nodeStyle),
       ),
     );
@@ -475,7 +511,8 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     YamlIterableEntry iterable, {
     required NodeStyle style,
     required bool forceInline,
-    required String? recursiveAnchor,
+    required String recursiveAnchor,
+    required LazyHash hash,
     List<String>? comments,
     String? anchor,
     String? localTag,
@@ -484,15 +521,17 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     iterable,
     style: style,
     nodeType: NodeType.list,
+    hash: hash,
     iterate: (index, element) {
       _pushPath(index.toString());
       visitObject(element);
       return true;
     },
-    compose: () {
+    compose: (hash) {
       // One in, one out
       final element = _nodes.removeLast();
       _popPaths(2);
+      hash.incrementalOnDemand(element.nodeHash.hexHash);
       return (element.isMultiline, element);
     },
     forceInline: forceInline,
@@ -508,40 +547,70 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void _buildMap(
     YamlMappingEntry iterable, {
     required NodeStyle style,
-    required String? recursiveAnchor,
+    required String recursiveAnchor,
+    required LazyHash hash,
     bool forceInline = false,
     List<String>? comments,
     String? anchor,
     String? localTag,
     CommentStyle? commentStyle,
   }) {
-    final keysSeen = HashSet<Object?>(
-      equals: _genericEquals,
-      hashCode: yamlCollectionEquality.hash,
-    );
+    final keysSeen = HashMap<NodeType, Iterable<FreeHash>>();
 
     // DartMap is just a helpful wrapper for a map.
-    bool pushKey(Object? key) => keysSeen.add(_unwrapCollections(key));
+    bool pushKey(TreeNode<Object> node) {
+      final TreeNode(:nodeType, :nodeHash) = node;
+
+      switch (keysSeen[nodeType]) {
+        case Set<FreeHash> set:
+          return set.add(nodeHash);
+
+        case ListQueue<FreeHash> queue:
+          {
+            final set = queue.toSet();
+            final seen = set.add(nodeHash);
+
+            // Some collection nodes were finalized.
+            if (set.length != queue.length) {
+              keysSeen[nodeType] = ListQueue.of(set);
+            }
+
+            return seen;
+          }
+
+        default:
+          {
+            keysSeen[nodeType] = nodeType == NodeType.alias
+                ? (ListQueue()..add(nodeHash))
+                : {nodeHash};
+
+            return true;
+          }
+      }
+    }
 
     _buildCollection(
       iterable,
       style: style,
       nodeType: NodeType.map,
+      hash: hash,
       iterate: (_, element) {
-        final key = element.key;
+        visitObject(element.key);
 
-        if (!pushKey(key)) {
+        // Quickly determine if this is a duplicate.
+        if (!pushKey(_nodes.last)) {
+          _nodes.removeLast();
           return false;
         }
 
-        visitObject(key);
         visitObject(element.value);
         return true;
       },
-      compose: () {
+      compose: (hash) {
         // Two in, two out
         final value = _nodes.removeLast();
         final key = _nodes.removeLast();
+        hash.incrementalOnDemand(key.nodeHash.hexHash, value.nodeHash.hexHash);
         _popPaths(2);
         return (key.isMultiline || value.isMultiline, (key, value));
       },
@@ -561,12 +630,13 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     Iterable<E> iterable, {
     required NodeStyle style,
     required NodeType nodeType,
+    required LazyHash hash,
     required bool Function(int index, E element) iterate,
-    required (bool isMultiline, T value) Function() compose,
+    required (bool isMultiline, T value) Function(LazyHash hash) compose,
     required bool forceInline,
     required List<String>? comments,
     required String? anchor,
-    required String? recursiveAnchor,
+    required String recursiveAnchor,
     required String? localTag,
     required CommentStyle? commentStyle,
     required NodeType type,
@@ -594,7 +664,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     for (final (index, element) in iterable.indexed) {
       if (!iterate(index, element)) continue;
-      final (isMultiline, node) = compose();
+      final (isMultiline, node) = compose(hash);
       update(isMultiline, node);
       queue.addLast(node);
     }
@@ -603,10 +673,14 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       CollectionNode(
         queue,
         buildStyle,
+        nodeHash: hash,
         nodeType: nodeType,
         forcedInline: forceInline,
         isMultiline: spanMultipleLines && queue.isNotEmpty,
-        anchor: anchor ?? (hasRecursiveRef ? recursiveAnchor : null),
+        anchor: _pushAnchor(
+          anchor ?? (hasRecursiveRef ? recursiveAnchor : null),
+          hash,
+        ),
         localTag: localTag,
         comments: comments,
         commentStyle: commentStyle?.ofQualified(buildStyle),
@@ -676,5 +750,9 @@ extension InjectState on TreeBuilder {
   ///
   /// This method should only be called if you are sure at least one object
   /// within the tree includes such an anchor in its properties.
-  void includeAnchors(Iterable<String> anchors) => _anchors.addAll(anchors);
+  void includeAnchors(Iterable<String> anchors) {
+    for (final anchor in anchors) {
+      _anchors[anchor] = null;
+    }
+  }
 }
