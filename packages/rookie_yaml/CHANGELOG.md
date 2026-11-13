@@ -1,10 +1,29 @@
 # Changelog
 
-## 0.7.0-pre.3
+## 0.7.0
 
-This release improves how the parser handles various YAML grammar edge cases in block and flow collections. This change also includes a variety of regression tests for these edge cases.
+This release brings significant improvements to the YAML parser implementation. The package is leaner and delegates dumping functionality to `package:dump_yaml` which also exports this package.
 
-> PS: We hit.. 96.95% 🎉 .. after running the official YAML test suite. 🥳
+> PS: The parser has a 97.46% pass rate after running the official YAML test suite.
+
+`experimental`:
+  - Add support for injecting implicit `GlobalTag`s into the parser.
+
+`BREAKING`:
+  - Dumper functionality migrated to `package:dump_yaml`.
+  - Yaml loader functions have been renamed.
+    - `loadDartObject` renamed to `loadObject`.
+    - `loadDartObjects` renamed to `loadAllObjects`.
+  - `DocBuilder` callback no longer provides the buffered `YamlComment`s.
+  - Renames the `ofBytes` constructor to `ofUnicode` in `UnicodeIterator`.
+  - `YamlDocument` has been made abstract. Prefer using `ImmutableDocument`.
+
+`feat`:
+  - Adds `span` param to `RuneOffset` which tracks the number of code units a single offset represents.
+  - Adds `rawOffset` param to `RuneOffset` which tracks the raw offset of the underlying source.
+  - Adds an `onParseComment` method to `CustomTriggers`.
+  - Parser defaults to the block map quick path when an alias appears after an anchor when parsing block node.
+  - Migrates the UTF decoders to exclusively use `Iterator`s.
 
 `fix`:
   - Fixes how the parser handles indents when exiting a block collection`s parsing context.
@@ -14,28 +33,13 @@ This release improves how the parser handles various YAML grammar edge cases in 
   - Fixes an issue where tabs were treated as indent in certain block contexts.
   - Strictly requires whitespace as separation when parsing compact block collections.
   - Removes implicit key restrictions in flow maps which accepts generic flow nodes in its grammar.
-
-## 0.7.0-pre.2
-
-`BREAKING`:
-  - `YamlDocument` has been made abstract. Prefer using `ImmutableDocument`.
-  - `DocBuilder` callback no longer provides the buffered `YamlComment`s.
-  - Renames the `ofBytes` constructor to `ofUnicode` in `UnicodeIterator`.
-
-`feat`:
-  - Adds `span` param to `RuneOffset` which tracks the number of code units a single offset represents.
-  - Adds an `onParseComment` method to `CustomTriggers`.
-
-## 0.7.0-pre.1
-
-This release focuses reducing the scope of `package:rookie_yaml` and migrating any non-parser functionality to external packages. It also includes minor QoL improvements. See progress [here](https://github.com/kekavc24/yaml_dart).
-
-`BREAKING`:
-  - Migrate `YamlSourceNode` and related classes to `package:editable_yaml` (unreleased).
-  - Migrates the YAML dumper to [`package:dump_yaml`](https://pub.dev/packages/dump_yaml).
-  - Renames YAML loaders.
-    - `loadDartObject` renamed to `loadObject`.
-    - `loadDartObjects` renamed to `loadAllObjects`.
+  - `,` (next flow entry indicator) is now included as part of the node's content within the span.
+  - Prevents `,` from affecting plain scalars not declared in flow nodes.
+  - Initializes a block map before the first implicit key is resolved.
+  - Update the end offset of a scalar correctly after folding and after a flow indicator is seen.
+  - Actively track the end offset of a block scalar when parsing the scalar's content.
+  - Prevents the parser from ignoring a custom type when a scalar is empty.
+  - Initialize a flow collection before scanning ahead.
 
 ## 0.6.0
 
